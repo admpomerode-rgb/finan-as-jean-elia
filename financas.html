@@ -172,6 +172,7 @@
   .fab{
     position:fixed; right:20px; bottom:calc(76px + env(safe-area-inset-bottom)); z-index:45;
     width:56px; height:56px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; line-height:1; padding:0 0 3px;
     background:var(--green); color:#fff; font-size:26px;
     border:none; box-shadow:0 6px 18px rgba(59,110,88,.4);
     cursor:pointer;
@@ -269,6 +270,14 @@
   .via-gasto .tag.pend{color:var(--gold);}
   .via-dia{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:12px 0 4px;}
   .via-rot{display:flex; justify-content:space-between; gap:8px; align-items:center; padding:7px 0; font-size:14px; border-bottom:1px solid #F1EEE3;}
+
+  /* ---------- menu da bolinha, aba "Mais" ---------- */
+  .fab-menu{position:fixed; right:20px; bottom:calc(142px + env(safe-area-inset-bottom)); z-index:46; display:none; flex-direction:column; gap:10px; align-items:flex-end;}
+  .fab-menu.open{display:flex;}
+  .fab-menu button{background:#fff; border:1px solid var(--paper-line); border-radius:28px; padding:13px 20px; font-size:15px; font-weight:600; color:var(--ink); box-shadow:0 6px 18px rgba(30,42,47,.22); cursor:pointer; font-family:inherit;}
+  .fab-menu button#fabAplicar{background:var(--green); color:#fff; border-color:var(--green);}
+  body.locked .fab-menu, body.locked #fabBackdrop{display:none !important;}
+  .bottom-nav button.mais-item{display:none;}
   .view{display:none;}
   .view.active{display:block;}
 
@@ -403,6 +412,11 @@
     #viaConteudo > .via-kpis{margin-bottom:18px;}
     .fab{display:flex; align-items:center; justify-content:center; line-height:1; padding:0 0 3px;}
     #viewViagens.active{column-count:1;}
+    #viewInvestimentos.active{column-count:1;}
+    #invConteudo{column-count:2; column-gap:22px;}
+    #invConteudo > *{break-inside:avoid;}
+    #invConteudo > .hero{column-span:all; margin-bottom:18px;}
+    #invConteudo > .card{margin-top:0; margin-bottom:18px;}
     #viaConteudo{column-count:2; column-gap:22px;}
     #viaConteudo > *{break-inside:avoid;}
     #viaConteudo > .via-kpis, #viaConteudo > .via-aviso, #viaConteudo > .save-btn, #viaConteudo > .card:first-child{column-span:all;}
@@ -414,6 +428,9 @@
     .sheet{border-radius:20px; max-width:560px; max-height:88vh; box-shadow:0 20px 60px rgba(0,0,0,.25);}
     #extConteudo.sheet, #ofxConteudo.sheet{max-width:680px;}
     .fab{right:40px; bottom:36px; width:60px; height:60px;}
+    .fab-menu{right:40px; bottom:108px;}
+    .bottom-nav button.mais-item{display:flex;}
+    .bottom-nav button#navMais{display:none;}
     .alerta-box{max-width:460px;}
     .via-btn:hover, .month-nav button:hover{border-color:var(--green);}
   }
@@ -506,20 +523,8 @@
     <div class="card">
       <h2>🏦 Contas Bancárias</h2>
       <div id="listaContas"><div class="empty">Nenhuma conta cadastrada ainda.</div></div>
+      <div class="via-acoes"><button class="via-btn" onclick="mudarView('cadastros')">➕ Cadastrar conta (aba Cadastros)</button></div>
     </div>
-    <div class="card">
-      <h2>+ Nova conta</h2>
-      <div class="field">
-        <label>Nome da conta</label>
-        <input type="text" id="novaContaNome" placeholder="Ex: Nubank, Itaú, Carteira...">
-      </div>
-      <div class="field">
-        <label>Saldo inicial (R$)</label>
-        <input type="text" id="novaContaSaldo" inputmode="decimal" placeholder="0,00">
-      </div>
-      <button class="save-btn" onclick="adicionarConta()">Adicionar conta</button>
-    </div>
-
     <div class="card">
       <h2>🔁 Transferências entre Contas</h2>
       <div id="listaTransferencias"><div class="empty">Nenhuma transferência registrada.</div></div>
@@ -531,26 +536,49 @@
     <div class="card">
       <h2>💳 Cartões de Crédito</h2>
       <div id="listaCartoes"><div class="empty">Nenhum cartão cadastrado ainda.</div></div>
-    </div>
-    <div class="card">
-      <h2>+ Novo cartão</h2>
-      <div class="field">
-        <label>Nome do cartão</label>
-        <input type="text" id="novoCartaoNome" placeholder="Ex: Nubank Roxinho, Inter...">
-      </div>
-      <div class="field">
-        <label>Limite (R$)</label>
-        <input type="text" id="novoCartaoLimite" inputmode="decimal" placeholder="0,00">
-      </div>
-      <div class="field">
-        <label>Dia de vencimento da fatura</label>
-        <input type="text" id="novoCartaoVenc" inputmode="numeric" placeholder="Ex: 10">
-      </div>
-      <button class="save-btn" onclick="adicionarCartao()">Adicionar cartão</button>
+      <div class="via-acoes"><button class="via-btn" onclick="mudarView('cadastros')">➕ Cadastrar cartão (aba Cadastros)</button></div>
     </div>
   </div>
 
+  <div class="view" id="viewCadastros">
+    <div class="card">
+      <h2>🏦 Contas bancárias</h2>
+      <div id="cadContas"></div>
+      <div class="field" style="margin-top:12px"><label>Nome da conta</label><input type="text" id="novaContaNome" placeholder="Ex: Nubank, Itaú, Carteira..."></div>
+      <div class="field"><label>Saldo inicial (R$)</label><input type="text" id="novaContaSaldo" inputmode="decimal" placeholder="0,00"></div>
+      <button class="save-btn" onclick="adicionarConta()">Adicionar conta bancária</button>
+    </div>
+    <div class="card">
+      <h2>💳 Cartões de crédito</h2>
+      <div id="cadCartoes"></div>
+      <div class="field" style="margin-top:12px"><label>Nome do cartão</label><input type="text" id="novoCartaoNome" placeholder="Ex: Nubank Roxinho, Inter..."></div>
+      <div class="field"><label>Limite (R$)</label><input type="text" id="novoCartaoLimite" inputmode="decimal" placeholder="0,00"></div>
+      <div class="field"><label>Dia de vencimento da fatura</label><input type="text" id="novoCartaoVenc" inputmode="numeric" placeholder="Ex: 10"></div>
+      <button class="save-btn" onclick="adicionarCartao()">Adicionar cartão</button>
+    </div>
+    <div class="card">
+      <h2>📈 Contas de investimento</h2>
+      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:6px">Onde você guarda dinheiro: poupança, CDB, tesouro… O dinheiro vai para elas pelo botão “Aplicar dinheiro”.</div>
+      <div id="cadInvest"></div>
+      <div class="field" style="margin-top:12px"><label>Nome da conta de investimento</label><input type="text" id="novaInvNome" placeholder="Ex: Poupança, CDB, Tesouro..."></div>
+      <div class="field"><label>Saldo inicial (R$)</label><input type="text" id="novaInvSaldo" inputmode="decimal" placeholder="0,00"></div>
+      <button class="save-btn" onclick="adicionarContaInvest()">Adicionar conta de investimento</button>
+    </div>
+  </div>
+
+  <div class="view" id="viewInvestimentos">
+    <div id="invConteudo"></div>
+  </div>
+
   <div class="view" id="viewRelatorios">
+    <div class="card">
+      <h2>🧮 Do saldo ao caixa — <span id="repMesLabelCaixa"></span></h2>
+      <div id="repCaixa"></div>
+    </div>
+    <div class="card">
+      <h2>💼 Aplicações financeiras</h2>
+      <div id="repAplic"></div>
+    </div>
     <div class="card">
       <h2>📊 Despesas por categoria — <span id="repMesLabelOut"></span></h2>
       <div id="repDespesas"><div class="empty">Sem despesas neste mês.</div></div>
@@ -571,7 +599,12 @@
 
 </main>
 
-<button class="fab" id="fabAdd" onclick="abrirSheet()">+</button>
+<div id="fabBackdrop" onclick="fecharMenuFab()" style="display:none;position:fixed;inset:0;z-index:44"></div>
+<div class="fab-menu" id="fabMenu">
+  <button id="fabAplicar" onclick="abrirAplicar('aplicacao')">💰 Aplicar dinheiro</button>
+  <button id="fabNovo" onclick="fecharMenuFab();abrirSheet()">✏️ Novo lançamento</button>
+</div>
+<button class="fab" id="fabAdd" onclick="abrirMenuFab()">+</button>
 
 <nav class="bottom-nav">
   <button id="navDashboard" class="active" onclick="mudarView('dashboard')">
@@ -580,17 +613,26 @@
   <button id="navContas" onclick="mudarView('contas')">
     <span class="ic">🏦</span>Contas
   </button>
-  <button id="navCartoes" onclick="mudarView('cartoes')">
+  <button id="navInvestimentos" onclick="mudarView('investimentos')">
+    <span class="ic">📈</span>Investimentos
+  </button>
+  <button id="navCartoes" class="mais-item" onclick="mudarView('cartoes')">
     <span class="ic">💳</span>Cartões
   </button>
-  <button id="navCategorias" onclick="mudarView('categorias')">
+  <button id="navCategorias" class="mais-item" onclick="mudarView('categorias')">
     <span class="ic">🗂️</span>Categorias
   </button>
   <button id="navRelatorios" onclick="mudarView('relatorios')">
     <span class="ic">📊</span>Relatórios
   </button>
-  <button id="navViagens" onclick="mudarView('viagens')">
+  <button id="navViagens" class="mais-item" onclick="mudarView('viagens')">
     <span class="ic">🧳</span>Viagens
+  </button>
+  <button id="navCadastros" class="mais-item" onclick="mudarView('cadastros')">
+    <span class="ic">🗃️</span>Cadastros
+  </button>
+  <button id="navMais" onclick="abrirMais()">
+    <span class="ic">☰</span>Mais
   </button>
 </nav>
 
@@ -686,6 +728,21 @@
   <div class="sheet" id="extConteudo"></div>
 </div>
 
+<div class="sheet-bg" id="sheetBgAplicar" onclick="if(event.target===this) fecharAplicar()">
+  <div class="sheet" id="apConteudo"></div>
+</div>
+
+<div class="sheet-bg" id="sheetBgMais" onclick="if(event.target===this) fecharMais()">
+  <div class="sheet">
+    <h3>Mais opções</h3>
+    <button class="via-btn" style="width:100%;padding:16px;font-size:15px;margin-bottom:8px;text-align:left" onclick="irMais('cartoes')">💳 Cartões de crédito</button>
+    <button class="via-btn" style="width:100%;padding:16px;font-size:15px;margin-bottom:8px;text-align:left" onclick="irMais('categorias')">🗂️ Categorias</button>
+    <button class="via-btn" style="width:100%;padding:16px;font-size:15px;margin-bottom:8px;text-align:left" onclick="irMais('viagens')">🧳 Viagens</button>
+    <button class="via-btn" style="width:100%;padding:16px;font-size:15px;margin-bottom:8px;text-align:left" onclick="irMais('cadastros')">🗃️ Cadastros (contas, cartões e investimentos)</button>
+    <button class="cancel-link" onclick="fecharMais()">Fechar</button>
+  </div>
+</div>
+
 <div class="sheet-bg" id="sheetBgOfx" onclick="if(event.target===this) fecharOfx()">
   <div class="sheet" id="ofxConteudo"></div>
 </div>
@@ -753,6 +810,8 @@ function renderTudo(){
   if(v.id==='viewContas'){ renderContas(); renderTransferencias(); }
   if(v.id==='viewCartoes') renderCartoes();
   if(v.id==='viewViagens') renderViagens();
+  if(v.id==='viewCadastros') renderCadastros();
+  if(v.id==='viewInvestimentos') renderInvestimentos();
   if(extContaId && document.getElementById('sheetBgExtrato').classList.contains('open')) renderExtrato();
 }
 document.querySelectorAll('input[type=text]').forEach(i => { if(!(i.maxLength > 0)) i.maxLength = 60; });
@@ -849,14 +908,14 @@ function adicionarCartao(){
   salvarCartoesLS(cartoes);
 
   nomeEl.value = ''; limiteEl.value = ''; vencEl.value = '';
-  renderCartoes();
+  renderTudo();
 }
 
 async function removerCartao(id){
   if(!(await confirmarGrande('Apagar este cartão e todas as compras dele?', 'Sim, apagar'))) return;
   salvarCartoesLS(carregarCartoes().filter(c => c.id !== id));
   salvarComprasCartao(carregarComprasCartao().filter(c => c.cartaoId !== id));
-  renderCartoes();
+  renderTudo();
 }
 
 let cartaoCompraAtual = null;
@@ -985,14 +1044,14 @@ function adicionarConta(){
 
   nomeEl.value = '';
   saldoEl.value = '';
-  renderContas();
+  renderTudo();
 }
 
 async function removerConta(id){
   if(!(await confirmarGrande('Apagar esta conta bancária? Os lançamentos que usam essa conta continuam, mas ficam sem conta.', 'Sim, apagar'))) return;
   const contas = carregarContas().filter(c => c.id !== id);
   salvarContas(contas);
-  renderContas();
+  renderTudo();
 }
 
 function todosLancamentosLocais(){
@@ -1062,6 +1121,7 @@ function popularSelectsTransferencia(){
 }
 
 function abrirSheetTransferencia(id){
+  if(id){ const tt = carregarTransferencias().find(x=>x.id===id); if(tt && tt.kind) return abrirAplicar(tt.kind, id); }   // aplicação/resgate abre a própria tela
   if(carregarContas().length < 2){
     alertaInline("Cadastre pelo menos 2 contas antes de transferir.");
     return;
@@ -1131,14 +1191,13 @@ function editarTransferencia(id){
 async function removerTransferencia(id){
   if(!(await confirmarGrande('Apagar esta transferência?', 'Sim, apagar'))) return;
   salvarTransferenciasLS(carregarTransferencias().filter(t => t.id !== id));
-  renderContas();
-  renderTransferencias();
+  renderTudo();
 }
 
 function renderTransferencias(){
   const wrap = document.getElementById('listaTransferencias');
-  const transferencias = carregarTransferencias();
-  const contas = carregarContas();
+  const transferencias = carregarTransferencias().filter(t => !t.kind);
+  const contas = todasContas();
   const nomeConta = id => (contas.find(c => c.id === id) || {}).nome || '—';
 
   if(!transferencias.length){
@@ -1306,15 +1365,20 @@ function popularSelectSubcategoria(){
 function mudarView(v){
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.bottom-nav button').forEach(el => el.classList.remove('active'));
-  document.getElementById('view' + v.charAt(0).toUpperCase() + v.slice(1)).classList.add('active');
-  document.getElementById('nav' + v.charAt(0).toUpperCase() + v.slice(1)).classList.add('active');
-  document.getElementById('fabAdd').style.display = (v === 'dashboard') ? 'flex' : 'none';
-  document.querySelectorAll('.month-nav').forEach(e=>{ e.style.display = (v === 'viagens') ? 'none' : ''; });
+  const cap = v.charAt(0).toUpperCase() + v.slice(1);
+  document.getElementById('view' + cap).classList.add('active');
+  const navBtn = document.getElementById('nav' + cap); navBtn.classList.add('active');
+  if(getComputedStyle(navBtn).display === 'none') document.getElementById('navMais').classList.add('active');   // no celular, as abas extras ficam dentro de "Mais"
+  fecharMenuFab();
+  document.getElementById('fabAdd').style.display = (v === 'dashboard' || v === 'contas' || v === 'investimentos') ? 'flex' : 'none';
+  document.querySelectorAll('.month-nav').forEach(e=>{ e.style.display = (v === 'viagens' || v === 'cadastros' || v === 'investimentos') ? 'none' : ''; });
   if(v === 'categorias') renderCategorias();
   if(v === 'relatorios') renderRelatorios();
   if(v === 'contas'){ renderContas(); renderTransferencias(); }
   if(v === 'cartoes') renderCartoes();
   if(v === 'viagens') renderViagens();
+  if(v === 'cadastros') renderCadastros();
+  if(v === 'investimentos') renderInvestimentos();
 }
 
 /* ---------- relatórios ---------- */
@@ -1352,6 +1416,27 @@ function renderRelatorios(){
 
   document.getElementById('repDespesas').innerHTML = montaBarra(despesas, 'saida') || '<div class="empty">Sem despesas neste mês.</div>';
   document.getElementById('repReceitas').innerHTML = montaBarra(receitas, 'entrada') || '<div class="empty">Sem receitas neste mês.</div>';
+
+  // do saldo ao caixa + aplicações financeiras
+  const mesChave = mesAtual.getFullYear()+'-'+String(mesAtual.getMonth()+1).padStart(2,'0');
+  const trfs = carregarTransferencias().filter(t=>t.kind);
+  const doMes = k => trfs.filter(t=>t.kind===k && String(t.data).slice(0,7)===mesChave).reduce((s,t)=>s+(Number(t.valor)||0),0);
+  const totEnt = receitas.reduce((s,l)=>s+l.valor,0), totSai = despesas.reduce((s,l)=>s+l.valor,0), aplMes = doMes('aplicacao'), resMes = doMes('resgate');
+  const sobra = Math.round((totEnt - totSai - aplMes + resMes)*100)/100;
+  const linhaRep = (nome, val, cor, forte) => `<div class="rep-row"><span class="nome" style="${forte?'font-weight:700':''}">${nome}</span><span class="rep-val" style="${cor?'color:'+cor+';':''}${forte?'font-weight:700':''}">${val}</span></div>`;
+  document.getElementById('repMesLabelCaixa').textContent = labelMes;
+  document.getElementById('repCaixa').innerHTML =
+    linhaRep('Entradas', '+ '+formatarMoeda(totEnt), 'var(--green)') + linhaRep('Despesas', '− '+formatarMoeda(totSai), 'var(--brick)') +
+    linhaRep('Aplicações financeiras', '− '+formatarMoeda(aplMes), 'var(--brick)') + linhaRep('Resgates', '+ '+formatarMoeda(resMes), 'var(--green)') +
+    '<div style="border-top:1px solid #F1EEE3;margin-top:6px"></div>' + linhaRep('Saldo comum (sobrou no caixa)', formatarMoeda(sobra), sobra>=0?'var(--green)':'var(--brick)', true) +
+    '<div style="font-size:11px;color:var(--ink-soft);margin-top:6px">Saldo comum = entradas − despesas − aplicações + resgates.</div>';
+  const invs = carregarContasInvest(), totalAplicado = Math.round(trfs.reduce((s,t)=>s+(t.kind==='aplicacao'?1:-1)*(Number(t.valor)||0),0)*100)/100, saldoInv = invs.reduce((s,c)=>s+saldoAtualConta(c),0);
+  document.getElementById('repAplic').innerHTML =
+    linhaRep('Aplicado neste mês', formatarMoeda(aplMes)) + linhaRep('Resgatado neste mês', formatarMoeda(resMes)) +
+    linhaRep('Líquido do mês (aplicado − resgatado)', formatarMoeda(aplMes-resMes), null, true) +
+    '<div style="border-top:1px solid #F1EEE3;margin:6px 0"></div>' +
+    linhaRep('Total aplicado até hoje (aplicações − resgates)', formatarMoeda(totalAplicado)) + linhaRep('Saldo atual nas contas de investimento', formatarMoeda(saldoInv), 'var(--green)', true) +
+    (invs.length ? '<div style="margin-top:8px">'+invs.map(c=>linhaRep(esc(c.nome), formatarMoeda(saldoAtualConta(c)))).join('')+'</div>' : '');
 
   // resumo dos últimos 6 meses
   const hoje = new Date(mesAtual);
@@ -1915,7 +2000,7 @@ function extEditar(kind, a, b){
 }
 function extRetomar(){
   if(!extVoltar) return; const v = extVoltar; extVoltar = null;
-  if(!carregarContas().some(c=>c.id===v.contaId)) return;
+  if(!todasContas().some(c=>c.id===v.contaId)) return;
   abrirExtrato(v.contaId); extMes = new Date(v.mes.getFullYear(), v.mes.getMonth(), 1); renderExtrato();
 }
 async function extApagar(kind, a, b){
@@ -1924,16 +2009,18 @@ async function extApagar(kind, a, b){
 }
 function extMudarMes(d){ extMes = new Date(extMes.getFullYear(), extMes.getMonth()+d, 1); renderExtrato(); }
 function movimentosConta(conta){
-  const contas = carregarContas(), nome = id => (contas.find(c=>c.id===id)||{}).nome || 'outra conta', out = [];
+  const contas = todasContas(), nome = id => (contas.find(c=>c.id===id)||{}).nome || 'outra conta', out = [];
   todosLancamentosLocais().filter(l=>l.contaId===conta.id).forEach(l=>out.push({ data:l.data, ordem:Number(l.criadoEm)||0, desc:l.descricao||'', sub:(l.categoria||'')+(l.subcategoria?' › '+l.subcategoria:''), valor:(l.tipo==='entrada'?1:-1)*(Number(l.valor)||0), kind:'l', chave:chaveDeData(l.data), cid:l.criadoEm }));
   carregarTransferencias().forEach(t=>{
-    if(t.origemId===conta.id) out.push({ data:t.data, ordem:0, desc:'Transferência para '+nome(t.destinoId)+(t.descricao?' — '+t.descricao:''), sub:'Transferência', valor:-(Number(t.valor)||0), kind:'t', tid:t.id });
-    if(t.destinoId===conta.id) out.push({ data:t.data, ordem:0, desc:'Transferência de '+nome(t.origemId)+(t.descricao?' — '+t.descricao:''), sub:'Transferência', valor:(Number(t.valor)||0), kind:'t', tid:t.id });
+    const rot = t.kind==='aplicacao' ? 'Aplicação financeira' : t.kind==='resgate' ? 'Resgate de aplicação financeira' : 'Transferência';
+    const extra = t.kind ? (t.obs?' — '+t.obs:'') : (t.descricao?' — '+t.descricao:'');
+    if(t.origemId===conta.id) out.push({ data:t.data, ordem:0, desc:rot+' para '+nome(t.destinoId)+extra, sub:t.kind?rot:'Transferência', valor:-(Number(t.valor)||0), kind:'t', tid:t.id });
+    if(t.destinoId===conta.id) out.push({ data:t.data, ordem:0, desc:rot+' de '+nome(t.origemId)+extra, sub:t.kind?rot:'Transferência', valor:(Number(t.valor)||0), kind:'t', tid:t.id });
   });
   return out.filter(m=>m.data).sort((a,b)=>a.data.localeCompare(b.data) || a.ordem-b.ordem);
 }
 function extDados(){
-  const conta = carregarContas().find(c=>c.id===extContaId); if(!conta) return null;
+  const conta = todasContas().find(c=>c.id===extContaId); if(!conta) return null;
   const chave = extMes.getFullYear()+'-'+String(extMes.getMonth()+1).padStart(2,'0');
   const mov = movimentosConta(conta);
   const antes = Math.round(((Number(conta.saldoInicial)||0) + mov.filter(m=>m.data.slice(0,7)<chave).reduce((s,m)=>s+m.valor,0))*100)/100;
@@ -2178,6 +2265,126 @@ async function ofxDesfazer(loteId){
   renderTudo(); renderOfx();
   await alertaGrande('Importação desfeita.','ok');
 }
+
+/* =========================================================
+   CADASTROS, CONTAS DE INVESTIMENTO, APLICAR DINHEIRO e RESGATE
+   Conta de investimento = igual a conta bancária (nome + saldo inicial), guardada em "contasInvestimento".
+   Aplicar e resgatar são TRANSFERÊNCIAS entre conta bancária e conta de investimento (kind: 'aplicacao' | 'resgate').
+   Não contam como despesa nem como receita; aparecem nos Relatórios.
+   ========================================================= */
+function carregarContasInvest(){ return lerLS('contasInvestimento', []); }
+function salvarContasInvest(l){ Store.set('contasInvestimento', JSON.stringify(l)); }
+function todasContas(){ return carregarContas().concat(carregarContasInvest()); }
+function parseValorBR(s){ const v = parseFloat(String(s||'').replace(/\./g,'').replace(',','.')); return isFinite(v) ? v : NaN; }
+
+function adicionarContaInvest(){
+  const nomeEl = document.getElementById('novaInvNome'), saldoEl = document.getElementById('novaInvSaldo');
+  const nome = nomeEl.value.trim(); const saldo = parseValorBR(saldoEl.value) || 0;
+  if(!nome){ alertaGrande('Digite o nome da conta de investimento. Ex: Poupança, CDB, Tesouro.','aviso'); return; }
+  const l = carregarContasInvest(); l.push({ id:'ci'+Date.now(), nome, saldoInicial:saldo });
+  salvarContasInvest(l); nomeEl.value = ''; saldoEl.value = ''; renderTudo();
+}
+async function removerContaInvest(id){
+  if(carregarTransferencias().some(t=>t.origemId===id || t.destinoId===id)){
+    await alertaGrande('Esta conta de investimento tem aplicações ou resgates. Apague esses movimentos antes de apagar a conta.','aviso'); return;
+  }
+  if(!(await confirmarGrande('Apagar esta conta de investimento?', 'Sim, apagar'))) return;
+  salvarContasInvest(carregarContasInvest().filter(c=>c.id!==id)); renderTudo();
+}
+
+function renderCadastros(){
+  const vazio = '<div class="empty">Nenhum cadastrado ainda.</div>';
+  const sub = t => `<div style="font-size:12px;color:var(--ink-soft);margin-top:2px">${t}</div>`;
+  const cs = carregarContas(), cc = carregarCartoes(), ci = carregarContasInvest();
+  document.getElementById('cadContas').innerHTML = cs.length ? cs.map(c=>`<div class="conta-item"><div><div class="nome">${esc(c.nome)}</div>${sub('Saldo inicial '+formatarMoeda(c.saldoInicial))}</div><button class="del" onclick="removerConta('${idSeguro(c.id)}')">✕</button></div>`).join('') : vazio;
+  document.getElementById('cadCartoes').innerHTML = cc.length ? cc.map(c=>`<div class="conta-item"><div><div class="nome">${esc(c.nome)}</div>${sub((c.limite?'Limite '+formatarMoeda(c.limite):'Sem limite informado')+(c.vencimento?' · vence dia '+esc(c.vencimento):''))}</div><button class="del" onclick="removerCartao('${idSeguro(c.id)}')">✕</button></div>`).join('') : vazio;
+  document.getElementById('cadInvest').innerHTML = ci.length ? ci.map(c=>`<div class="conta-item"><div><div class="nome">${esc(c.nome)}</div>${sub('Saldo inicial '+formatarMoeda(c.saldoInicial))}</div><button class="del" onclick="removerContaInvest('${idSeguro(c.id)}')">✕</button></div>`).join('') : vazio;
+}
+
+function renderInvestimentos(){
+  const box = document.getElementById('invConteudo'); if(!box) return;
+  const cs = carregarContasInvest(), todas = todasContas();
+  const nome = id => (todas.find(c=>c.id===id)||{}).nome || '—';
+  const total = cs.reduce((s,c)=>s+saldoAtualConta(c),0);
+  const movs = carregarTransferencias().filter(t=>t.kind).sort((a,b)=>String(b.data).localeCompare(String(a.data)) || (b.criadoEm||0)-(a.criadoEm||0));
+  box.innerHTML = `
+    <div class="hero"><div class="lbl">Total investido</div><div class="val">${formatarMoeda(total)}</div>
+      <div class="sub"><div>${cs.length} conta(s) de investimento</div></div></div>
+    <div class="card">
+      <h2>📈 Contas de investimento</h2>
+      ${cs.length ? cs.map(c=>{ const id = idSeguro(c.id), sd = saldoAtualConta(c); return `
+        <div class="conta-item" style="flex-wrap:wrap;gap:8px">
+          <div><div class="nome">${esc(c.nome)}</div><div class="saldo" style="color:${sd>=0?'var(--green)':'var(--brick)'}">${formatarMoeda(sd)}</div></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="via-btn peq verde" onclick="abrirAplicar('aplicacao',null,'${id}')">💰 Aplicar</button>
+            <button class="via-btn peq" onclick="abrirAplicar('resgate',null,'${id}')">↩ Resgatar</button>
+            <button class="via-btn peq" onclick="abrirExtrato('${id}')">📄 Extrato</button>
+          </div></div>`; }).join('') : '<div class="empty">Nenhuma conta de investimento. Cadastre em <b>Cadastros</b>.</div>'}
+      <div class="via-acoes"><button class="via-btn" onclick="mudarView('cadastros')">➕ Cadastrar conta de investimento</button></div>
+    </div>
+    <div class="card">
+      <h2>🔁 Aplicações e resgates</h2>
+      ${movs.length ? movs.map(t=>`
+        <div class="transf-item"><div>
+          <div class="rota">${t.kind==='aplicacao'?'💰 Aplicação financeira':'↩ Resgate de aplicação'}</div>
+          <div class="data-desc">${esc(nome(t.origemId))} → ${esc(nome(t.destinoId))} · ${esc(viaData(t.data))}${t.obs?' · '+esc(t.obs):''}</div></div>
+          <div class="lanc-right"><div class="val" style="color:${t.kind==='aplicacao'?'var(--brick)':'var(--green)'}">${formatarMoeda(t.valor)}</div>
+            <div class="acoes"><button onclick="editarTransferencia('${idSeguro(t.id)}')">✎</button><button class="del" onclick="removerTransferencia('${idSeguro(t.id)}')">✕</button></div></div></div>`).join('') : '<div class="empty">Nenhuma aplicação ou resgate ainda.</div>'}
+    </div>`;
+}
+
+/* ---------- aplicar dinheiro / resgatar ---------- */
+let apForm = null;
+function abrirAplicar(kind, id, preConta){
+  fecharMenuFab();
+  const bancos = carregarContas(), invs = carregarContasInvest();
+  if(!bancos.length || !invs.length){
+    alertaGrande('Para aplicar ou resgatar, cadastre antes pelo menos uma conta bancária e uma conta de investimento, na aba Cadastros.','aviso',[{t:'Ir para Cadastros',v:true},{t:'Fechar',v:false,cls:'cancel-link'}]).then(v=>{ if(v) mudarView('cadastros'); });
+    return;
+  }
+  let t = null; if(id){ t = carregarTransferencias().find(x=>x.id===id); if(!t) return; kind = t.kind || kind; }
+  apForm = { kind, id: id||null };
+  const apl = kind==='aplicacao', origens = apl ? bancos : invs, destinos = apl ? invs : bancos;
+  const sel = (idn, lista, atual)=>`<select id="${idn}">${lista.map(c=>`<option value="${esc(c.id)}" ${c.id===atual?'selected':''}>${esc(c.nome)}</option>`).join('')}</select>`;
+  const o = t ? t.origemId : (!apl && preConta ? preConta : ''), d = t ? t.destinoId : (apl && preConta ? preConta : '');
+  document.getElementById('apConteudo').innerHTML = `
+    <h3>${apl ? (t?'Editar aplicação':'💰 Aplicar dinheiro') : (t?'Editar resgate':'↩ Resgatar aplicação')}</h3>
+    <div style="font-size:12px;color:var(--ink-soft);margin:-6px 0 12px">${apl ? 'O dinheiro sai da conta bancária e vai para a conta de investimento. Vai aparecer como “Aplicação financeira”.' : 'O dinheiro volta da conta de investimento para a conta bancária. Vai aparecer como “Resgate de aplicação financeira”.'}</div>
+    <div class="field"><label>${apl?'De qual conta bancária sai':'De qual conta de investimento'}</label>${sel('apOrigem', origens, o)}</div>
+    <div class="field"><label>${apl?'Para qual conta de investimento':'Para qual conta bancária'}</label>${sel('apDestino', destinos, d)}</div>
+    <div class="field"><label>Valor (R$)</label><input id="apValor" type="text" inputmode="decimal" maxlength="14" placeholder="0,00" value="${t?String(t.valor).replace('.',','):''}"></div>
+    <div class="field"><label>Data</label><input id="apData" type="date" value="${esc(t?t.data:hojeISO())}"></div>
+    <div class="field"><label>Observação (opcional)</label><input id="apObs" type="text" maxlength="80" placeholder="Ex: CDB 110% do CDI" value="${esc(t&&t.obs||'')}"></div>
+    <button class="save-btn" onclick="salvarAplicar()">${apl?'Aplicar':'Resgatar'}</button>
+    <button class="cancel-link" onclick="fecharAplicar()">Cancelar</button>`;
+  document.getElementById('sheetBgAplicar').classList.add('open');
+}
+function fecharAplicar(){ document.getElementById('sheetBgAplicar').classList.remove('open'); apForm = null; extRetomar(); }
+async function salvarAplicar(){
+  if(!apForm) return; const apl = apForm.kind==='aplicacao';
+  const origemId = document.getElementById('apOrigem').value, destinoId = document.getElementById('apDestino').value;
+  const valor = Math.round(parseValorBR(document.getElementById('apValor').value)*100)/100, data = document.getElementById('apData').value, obs = document.getElementById('apObs').value.trim();
+  if(!origemId || !destinoId || origemId===destinoId){ return alertaGrande('Escolha as duas contas.','erro'); }
+  if(!(valor>0 && valor<1e9)){ return alertaGrande('Informe o valor, como 500,00.','erro'); }
+  if(!data){ return alertaGrande('Informe a data.','erro'); }
+  const lista = carregarTransferencias(); const antigo = apForm.id ? lista.find(x=>x.id===apForm.id) : null;
+  if(!apl){   // resgate maior que o saldo registrado: pergunta antes
+    const conta = carregarContasInvest().find(c=>c.id===origemId);
+    const saldo = conta ? saldoAtualConta(conta) + (antigo && antigo.origemId===origemId ? Number(antigo.valor)||0 : 0) : 0;
+    if(valor > saldo + 0.004 && !(await confirmarGrande('O valor ('+formatarMoeda(valor)+') é maior que o saldo registrado nesta conta de investimento ('+formatarMoeda(saldo)+'). Resgatar mesmo assim?', 'Sim, resgatar'))) return;
+  }
+  const descricao = (apl ? 'Aplicação financeira' : 'Resgate de aplicação financeira') + (obs ? ' — '+obs : '');
+  if(antigo) Object.assign(antigo, { origemId, destinoId, valor, data, descricao, obs, kind:apForm.kind });
+  else lista.push({ id:'tf'+Date.now(), origemId, destinoId, valor, data, descricao, obs, kind:apForm.kind, criadoEm:Date.now() });
+  salvarTransferenciasLS(lista); fecharAplicar(); renderTudo();
+}
+
+/* ---------- menu da bolinha (+) e menu "Mais" ---------- */
+function abrirMenuFab(){ const m = document.getElementById('fabMenu'); const abrir = !m.classList.contains('open'); m.classList.toggle('open', abrir); document.getElementById('fabBackdrop').style.display = abrir ? 'block' : 'none'; }
+function fecharMenuFab(){ const m = document.getElementById('fabMenu'); if(m) m.classList.remove('open'); const b = document.getElementById('fabBackdrop'); if(b) b.style.display = 'none'; }
+function abrirMais(){ document.getElementById('sheetBgMais').classList.add('open'); }
+function fecharMais(){ document.getElementById('sheetBgMais').classList.remove('open'); }
+function irMais(v){ fecharMais(); mudarView(v); }
 
 /* ---------- login, bloqueio por inatividade ---------- */
 let tentativasLogin = 0, bloqueioAte = 0, timerInatividade = null;
