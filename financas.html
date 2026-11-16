@@ -1090,6 +1090,7 @@ function abrirSheetTransferencia(id){
 function fecharSheetTransferencia(){
   document.getElementById('sheetBgTransferencia').classList.remove('open');
   editandoTransferenciaId = null;
+  extRetomar();
 }
 
 function salvarTransferencia(){
@@ -1521,6 +1522,7 @@ function fecharSheet(){
   document.getElementById('fDesc').value = '';
   document.getElementById('fValor').value = '';
   editandoLancamento = null;
+  extRetomar();
 }
 function setTipo(t){
   tipoAtual = t;
@@ -1905,13 +1907,28 @@ function abrirExtrato(id){
   document.getElementById('sheetBgExtrato').classList.add('open'); renderExtrato();
 }
 function fecharExtrato(){ document.getElementById('sheetBgExtrato').classList.remove('open'); extContaId = null; }
+let extVoltar = null;   // ao editar um movimento, o extrato fecha e volta (no mesmo mês) depois de salvar ou cancelar
+function extEditar(kind, a, b){
+  extVoltar = { contaId: extContaId, mes: new Date(extMes) }; fecharExtrato();
+  if(kind==='t') abrirSheetTransferencia(a); else editarLancamento(a, b);
+  if(!document.querySelector('.sheet-bg.open')) extRetomar();   // nada abriu (ex.: lançamento não encontrado): volta ao extrato
+}
+function extRetomar(){
+  if(!extVoltar) return; const v = extVoltar; extVoltar = null;
+  if(!carregarContas().some(c=>c.id===v.contaId)) return;
+  abrirExtrato(v.contaId); extMes = new Date(v.mes.getFullYear(), v.mes.getMonth(), 1); renderExtrato();
+}
+async function extApagar(kind, a, b){
+  if(kind==='t') await removerTransferencia(a); else await excluirLancamento(a, b);
+  renderTudo();
+}
 function extMudarMes(d){ extMes = new Date(extMes.getFullYear(), extMes.getMonth()+d, 1); renderExtrato(); }
 function movimentosConta(conta){
   const contas = carregarContas(), nome = id => (contas.find(c=>c.id===id)||{}).nome || 'outra conta', out = [];
-  todosLancamentosLocais().filter(l=>l.contaId===conta.id).forEach(l=>out.push({ data:l.data, ordem:Number(l.criadoEm)||0, desc:l.descricao||'', sub:(l.categoria||'')+(l.subcategoria?' › '+l.subcategoria:''), valor:(l.tipo==='entrada'?1:-1)*(Number(l.valor)||0) }));
+  todosLancamentosLocais().filter(l=>l.contaId===conta.id).forEach(l=>out.push({ data:l.data, ordem:Number(l.criadoEm)||0, desc:l.descricao||'', sub:(l.categoria||'')+(l.subcategoria?' › '+l.subcategoria:''), valor:(l.tipo==='entrada'?1:-1)*(Number(l.valor)||0), kind:'l', chave:chaveDeData(l.data), cid:l.criadoEm }));
   carregarTransferencias().forEach(t=>{
-    if(t.origemId===conta.id) out.push({ data:t.data, ordem:0, desc:'Transferência para '+nome(t.destinoId)+(t.descricao?' — '+t.descricao:''), sub:'Transferência', valor:-(Number(t.valor)||0) });
-    if(t.destinoId===conta.id) out.push({ data:t.data, ordem:0, desc:'Transferência de '+nome(t.origemId)+(t.descricao?' — '+t.descricao:''), sub:'Transferência', valor:(Number(t.valor)||0) });
+    if(t.origemId===conta.id) out.push({ data:t.data, ordem:0, desc:'Transferência para '+nome(t.destinoId)+(t.descricao?' — '+t.descricao:''), sub:'Transferência', valor:-(Number(t.valor)||0), kind:'t', tid:t.id });
+    if(t.destinoId===conta.id) out.push({ data:t.data, ordem:0, desc:'Transferência de '+nome(t.origemId)+(t.descricao?' — '+t.descricao:''), sub:'Transferência', valor:(Number(t.valor)||0), kind:'t', tid:t.id });
   });
   return out.filter(m=>m.data).sort((a,b)=>a.data.localeCompare(b.data) || a.ordem-b.ordem);
 }
@@ -1937,7 +1954,7 @@ function renderExtrato(){
       <div class="via-kpi"><small>Saídas</small><b style="color:var(--brick)">${formatarMoeda(d.sai)}</b></div>
     </div>
     <div style="margin-top:12px">
-      ${d.linhas.length ? d.linhas.map(l=>`<div class="via-rot" style="align-items:flex-start"><div style="min-width:0"><div style="font-size:11px;color:var(--ink-soft)">${esc(viaData(l.data).slice(0,5))} · ${esc(l.sub)}</div><div style="font-size:14px">${esc(l.desc)}</div></div><div style="text-align:right;flex-shrink:0"><b style="color:${cor(l.valor)}">${l.valor>=0?'+':'−'} ${formatarMoeda(Math.abs(l.valor))}</b><div style="font-size:11px;color:var(--ink-soft)">saldo ${formatarMoeda(l.saldo)}</div></div></div>`).join('') : '<div class="empty">Nenhum movimento nesta conta neste mês.</div>'}
+      ${d.linhas.length ? d.linhas.map(l=>`<div class="via-rot" style="align-items:flex-start"><div style="min-width:0"><div style="font-size:11px;color:var(--ink-soft)">${esc(viaData(l.data).slice(0,5))} · ${esc(l.sub)}</div><div style="font-size:14px">${esc(l.desc)}</div></div><div style="text-align:right;flex-shrink:0"><b style="color:${cor(l.valor)}">${l.valor>=0?'+':'−'} ${formatarMoeda(Math.abs(l.valor))}</b><div style="font-size:11px;color:var(--ink-soft)">saldo ${formatarMoeda(l.saldo)}</div><div style="margin-top:5px;display:flex;gap:6px;justify-content:flex-end"><button class="via-btn peq" onclick="${l.kind==='t' ? `extEditar('t','${idSeguro(l.tid)}')` : `extEditar('l','${l.chave}',${Number(l.cid)})`}">✎ Editar</button><button class="via-btn peq perigo" onclick="${l.kind==='t' ? `extApagar('t','${idSeguro(l.tid)}')` : `extApagar('l','${l.chave}',${Number(l.cid)})`}">✕ Apagar</button></div></div></div>`).join('') : '<div class="empty">Nenhum movimento nesta conta neste mês.</div>'}
     </div>
     <div style="font-size:12px;color:var(--ink-soft);margin-top:10px">Saldo atual da conta (todos os lançamentos): <b>${formatarMoeda(saldoAtualConta(d.conta))}</b></div>
     <button class="save-btn" style="margin-top:12px" onclick="extPDF()">⬇ Baixar este mês em PDF</button>
