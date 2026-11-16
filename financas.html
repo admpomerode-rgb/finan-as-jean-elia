@@ -376,6 +376,51 @@
   .alerta-box .save-btn{margin-top:8px; padding:15px; font-size:16px;}
   .alerta-box .cancel-link{font-size:15px; padding:10px;}
   .login-erro{font-size:15px; font-weight:600;}
+
+  /* ---------- NOTEBOOK / TELA GRANDE (a partir de 900px): menu na lateral, conteúdo em 2 colunas, janelas no centro ---------- */
+  @media (min-width:900px){
+    body{padding-bottom:40px; padding-left:230px;}
+    .bottom-nav{
+      top:0; bottom:0; left:0; right:auto; width:230px; flex-direction:column; justify-content:flex-start;
+      gap:6px; padding:96px 14px 16px; border-top:none; border-right:1px solid var(--paper-line); box-shadow:2px 0 14px rgba(30,42,47,.05);
+    }
+    .bottom-nav button{
+      flex:none; flex-direction:row; justify-content:flex-start; gap:12px; padding:12px 16px; font-size:14px;
+      border-radius:12px; text-align:left;
+    }
+    .bottom-nav button .ic{font-size:20px; width:26px; text-align:center;}
+    .bottom-nav button:hover{background:var(--green-soft);}
+    .bottom-nav button.active{background:var(--green-soft); color:var(--green);}
+    header.top{padding:28px 40px 14px; max-width:1180px; margin:0 auto;}
+    header.top h1{font-size:30px;}
+    .month-nav{margin:4px 0 16px;}
+    main{max-width:1180px; padding:0 40px;}
+    .view.active{column-count:2; column-gap:22px;}
+    .view.active > *{break-inside:avoid; -webkit-column-break-inside:avoid;}
+    .view.active > .hero{column-span:all; margin-bottom:4px;}
+    .view.active > .card{margin-top:0; margin-bottom:18px;}
+    #viaConteudo > .card, #viaConteudo > .via-card{margin-top:0; margin-bottom:18px;}
+    #viaConteudo > .via-kpis{margin-bottom:18px;}
+    .fab{display:flex; align-items:center; justify-content:center; line-height:1; padding:0 0 3px;}
+    #viewViagens.active{column-count:1;}
+    #viaConteudo{column-count:2; column-gap:22px;}
+    #viaConteudo > *{break-inside:avoid;}
+    #viaConteudo > .via-kpis, #viaConteudo > .via-aviso, #viaConteudo > .save-btn, #viaConteudo > .card:first-child{column-span:all;}
+    #viaConteudo > .save-btn{max-width:360px; margin-bottom:18px;}
+    #viaConteudo > .via-kpis{grid-template-columns:repeat(4,1fr);}
+    #viaConteudo > .via-kpis .via-kpi.full{grid-column:span 2;}
+    .via-card:hover{border-color:var(--green); box-shadow:0 4px 18px rgba(30,42,47,.1);}
+    .sheet-bg{align-items:center;}
+    .sheet{border-radius:20px; max-width:560px; max-height:88vh; box-shadow:0 20px 60px rgba(0,0,0,.25);}
+    #extConteudo.sheet{max-width:680px;}
+    .fab{right:40px; bottom:36px; width:60px; height:60px;}
+    .alerta-box{max-width:460px;}
+    .via-btn:hover, .month-nav button:hover{border-color:var(--green);}
+  }
+  @media (min-width:1500px){
+    body{padding-left:250px;} .bottom-nav{width:250px;}
+    header.top, main{max-width:1320px;}
+  }
 </style>
 </head>
 <body>
