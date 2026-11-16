@@ -348,7 +348,7 @@
     <div class="panda">🐼</div>
     <h2>Finanças Jean e Elia</h2>
     <div class="field"><label>E-mail</label><input id="loginEmail" type="email" autocomplete="username" maxlength="120"></div>
-    <div class="field"><label>Senha</label><input id="loginSenha" type="password" autocomplete="current-password" maxlength="128"></div>
+    <div class="field"><label>Senha</label><div style="position:relative"><input id="loginSenha" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="128" style="-webkit-text-security:disc;padding-right:56px"><button type="button" id="loginOlho" aria-label="Mostrar senha" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;font-size:22px;padding:6px;cursor:pointer">👁️</button></div></div>
     <div id="loginErro" class="login-erro"></div>
     <button class="save-btn" onclick="entrarLogin()">Entrar</button>
   </div>
@@ -594,6 +594,7 @@
 </div>
 
 <script>
+(function(){ const b=document.getElementById('loginOlho'), i=document.getElementById('loginSenha'); if(!b||!i) return; b.addEventListener('click',()=>{ const ver=i.style.webkitTextSecurity!=='none'; i.style.webkitTextSecurity=ver?'none':'disc'; b.textContent=ver?'🙈':'👁️'; b.setAttribute('aria-label',ver?'Esconder senha':'Mostrar senha'); i.focus(); }); i.addEventListener('keydown',e=>{ if(e.key==='Enter') entrarLogin(); }); })();
 /* ---------- segurança: helpers ---------- */
 function esc(v){
   return String(v == null ? '' : v)
