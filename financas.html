@@ -150,7 +150,7 @@
   .lanc:last-child{border-bottom:none;}
   .lanc .desc{font-size:14px; font-weight:500;}
   .lanc .cat{font-size:12px; color:var(--ink-soft);}
-  .lanc .val{font-family:'Lora',serif; font-weight:600; font-size:14px;}
+  .lanc .val{font-family:'Lora',serif; font-weight:600; font-size:14px; white-space:nowrap; flex-shrink:0;}
   .lanc .val.in{color:var(--green);}
   .lanc .val.out{color:var(--brick);}
   .lanc .acoes{display:flex; gap:2px; margin-left:8px;}
@@ -412,7 +412,7 @@
     .via-card:hover{border-color:var(--green); box-shadow:0 4px 18px rgba(30,42,47,.1);}
     .sheet-bg{align-items:center;}
     .sheet{border-radius:20px; max-width:560px; max-height:88vh; box-shadow:0 20px 60px rgba(0,0,0,.25);}
-    #extConteudo.sheet{max-width:680px;}
+    #extConteudo.sheet, #ofxConteudo.sheet{max-width:680px;}
     .fab{right:40px; bottom:36px; width:60px; height:60px;}
     .alerta-box{max-width:460px;}
     .via-btn:hover, .month-nav button:hover{border-color:var(--green);}
@@ -684,6 +684,10 @@
 
 <div class="sheet-bg" id="sheetBgExtrato" onclick="if(event.target===this) fecharExtrato()">
   <div class="sheet" id="extConteudo"></div>
+</div>
+
+<div class="sheet-bg" id="sheetBgOfx" onclick="if(event.target===this) fecharOfx()">
+  <div class="sheet" id="ofxConteudo"></div>
 </div>
 
 <div class="sheet-bg" id="sheetBgVia" onclick="if(event.target===this) viaFecharForm()">
@@ -1026,7 +1030,7 @@ function renderContas(){
           <div class="nome">${esc(c.nome)}</div>
           <div class="saldo" style="color:${saldo>=0 ? 'var(--green)' : 'var(--brick)'}">${formatarMoeda(saldo)}</div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center"><button class="via-btn peq" onclick="abrirExtrato('${idSeguro(c.id)}')">📄 Extrato</button><button class="del" onclick="removerConta('${idSeguro(c.id)}')">✕</button></div>
+        <div style="display:flex;gap:6px;align-items:center"><button class="via-btn peq" onclick="abrirExtrato('${idSeguro(c.id)}')">📄 Extrato</button><button class="via-btn peq verde" onclick="abrirOfx('${idSeguro(c.id)}')">📥 OFX</button><button class="del" onclick="removerConta('${idSeguro(c.id)}')">✕</button></div>
       </div>
     `;
   }).join('');
@@ -1415,6 +1419,45 @@ function render(){
 /* ---------- integração Pró-labore (Livro Caixa) ---------- */
 
 let prolaboreReq = 0;
+/* Pró-labore: cada despesa marcada como Pró-labore (e já paga) no Livro Caixa gera aqui, uma vez só:
+   1) uma ENTRADA "Pró-labore" e logo em seguida 2) uma SAÍDA com a mesma descrição, o mesmo local (fornecedor) e a mesma categoria da despesa.
+   Só LÊ o Livro Caixa. O que já foi trazido fica anotado em "prolaboreImportados" (se você apagar daqui, não volta sozinho). */
+let prolaboreSincronizando = false;
+async function prolaboreSincronizar(snap){
+  if(prolaboreSincronizando || !Store.pronto || !authPessoal || !authPessoal.currentUser) return;
+  prolaboreSincronizando = true;
+  try{
+    const feitos = Store.get('prolaboreImportados', {}) || {};
+    const cats = carregarCategorias();
+    const catEntrada = (cats.entrada.find(c=>/pr[oó].?labore/i.test(c.nome)) || cats.entrada[0] || {}).nome || 'Outros';
+    const novos = []; 
+    snap.forEach(doc=>{
+      const d = doc.data(); if(feitos[doc.id]) return;
+      if(d.status !== 'pago' || d.tipo === 'entrada') return;                       // só despesa já paga
+      const valor = Math.round((Number(d.valor)||0)*100)/100; const iso = String(d.dataPagamento || d.dataVencimento || d.data || '').slice(0,10);
+      if(!(valor>0) || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+      novos.push({ id:doc.id, d, valor, iso });
+    });
+    if(!novos.length) return;
+    novos.sort((a,b)=>a.iso.localeCompare(b.iso));
+    const porMes = {}; let t = Date.now();
+    novos.forEach(n=>{
+      const k = chaveDeData(n.iso); const lista = porMes[k] || (porMes[k] = lerLS(k, []));
+      const desc = String(n.d.descricao||'Despesa').trim(), local = String(n.d.fornecedor||'').trim();
+      const nomeCat = String(n.d.categoria||'').trim();
+      const catSaida = (cats.saida.find(c=>c.nome.toLowerCase()===nomeCat.toLowerCase()) || cats.saida.find(c=>c.nome==='Outros') || cats.saida[0] || {}).nome || 'Outros';
+      lista.push({ descricao:'Pró-labore — '+desc, valor:n.valor, categoria:catEntrada, subcategoria:null, contaId:null, data:n.iso, tipo:'entrada', criadoEm:t++, origemLC:n.id });
+      lista.push({ descricao:(local ? desc+' · '+local : desc).slice(0,120), valor:n.valor, categoria:catSaida, subcategoria:null, contaId:null, data:n.iso, tipo:'saida', criadoEm:t++, origemLC:n.id, localLC:local, categoriaLC:nomeCat });
+      feitos[n.id] = true;
+    });
+    Object.keys(porMes).forEach(k=>Store.set(k, JSON.stringify(porMes[k])));
+    Store.set('prolaboreImportados', JSON.stringify(feitos));
+    renderTudo();
+    await alertaGrande('Trouxe do Livro Caixa '+novos.length+' despesa(s) de Pró-labore. Para cada uma, o app lançou uma receita de Pró-labore e, logo em seguida, a despesa no mesmo local.','ok');
+  } catch(e){ console.error(e); }
+  finally { prolaboreSincronizando = false; }
+}
+
 function renderProlabore(){
   const valEl = document.getElementById('prolaboreValor');
   const statusEl = document.getElementById('prolaboreStatus');
@@ -1431,6 +1474,7 @@ function renderProlabore(){
   // só LEITURA: lançamentos que o Livro Caixa marcou como Pró-Labore
   dbLivroCaixa.collection('livro-caixa-lancamentos').where('proLabore','==',true).get()
     .then(snap => {
+      prolaboreSincronizar(snap);          // despesas de Pró-labore PAGAS no Livro Caixa viram receita + despesa aqui (uma vez só cada)
       if(minha !== prolaboreReq) return;   // o usuário já trocou de mês
       let total = 0, qtd = 0, pendentes = 0;
       snap.forEach(doc => {
@@ -1896,18 +1940,226 @@ function renderExtrato(){
       ${d.linhas.length ? d.linhas.map(l=>`<div class="via-rot" style="align-items:flex-start"><div style="min-width:0"><div style="font-size:11px;color:var(--ink-soft)">${esc(viaData(l.data).slice(0,5))} · ${esc(l.sub)}</div><div style="font-size:14px">${esc(l.desc)}</div></div><div style="text-align:right;flex-shrink:0"><b style="color:${cor(l.valor)}">${l.valor>=0?'+':'−'} ${formatarMoeda(Math.abs(l.valor))}</b><div style="font-size:11px;color:var(--ink-soft)">saldo ${formatarMoeda(l.saldo)}</div></div></div>`).join('') : '<div class="empty">Nenhum movimento nesta conta neste mês.</div>'}
     </div>
     <div style="font-size:12px;color:var(--ink-soft);margin-top:10px">Saldo atual da conta (todos os lançamentos): <b>${formatarMoeda(saldoAtualConta(d.conta))}</b></div>
-    <button class="save-btn" style="margin-top:12px" onclick="extCSV()">⬇ Baixar este mês (CSV)</button>
+    <button class="save-btn" style="margin-top:12px" onclick="extPDF()">⬇ Baixar este mês em PDF</button>
     <button class="cancel-link" onclick="fecharExtrato()">Fechar</button>`;
 }
-function extCSV(){
+/* ---------- PDF do extrato (gerado aqui mesmo, sem biblioteca externa; A4 em pé) ---------- */
+const PDF_ESPECIAIS = {'–':'\x96','—':'\x97','•':'\x95','’':'\x92','‘':'\x91','“':'\x93','”':'\x94','€':'\x80','−':'-','→':'>','✓':'v'};
+function pdfTxt(s){
+  return String(s==null?'':s).replace(/[\r\n\t]+/g,' ').replace(/[^\x20-\x7E\xA0-\xFF]/g, m=>PDF_ESPECIAIS[m]||'').replace(/([\\()])/g,'\\$1');
+}
+let _pdfCtx = null;
+function pdfLargura(txt, tam, negrito){
+  if(!_pdfCtx) _pdfCtx = document.createElement('canvas').getContext('2d');
+  _pdfCtx.font = (negrito?'bold ':'')+tam+'px Helvetica, Arial, sans-serif';
+  return _pdfCtx.measureText(String(txt)).width;
+}
+function pdfQuebrar(txt, larg, tam, negrito){
+  const palavras = String(txt==null?'':txt).replace(/\s+/g,' ').trim().split(' '); const linhas = []; let atual = '';
+  const cabe = t => pdfLargura(t, tam, negrito) <= larg;
+  palavras.forEach(p=>{
+    let pal = p;
+    while(!cabe(pal) && pal.length>1){   // palavra maior que a coluna: corta
+      let i = pal.length-1; while(i>1 && !cabe(pal.slice(0,i))) i--;
+      if(atual){ linhas.push(atual); atual=''; }
+      linhas.push(pal.slice(0,i)); pal = pal.slice(i);
+    }
+    const teste = atual ? atual+' '+pal : pal;
+    if(cabe(teste)) atual = teste; else { if(atual) linhas.push(atual); atual = pal; }
+  });
+  if(atual) linhas.push(atual);
+  return linhas.length ? linhas : [''];
+}
+function pdfMontar(paginas){
+  const objs = [], kids = [];
+  objs[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+  objs[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
+  objs[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
+  let n = 5;
+  paginas.forEach(c=>{
+    const pg = n++, ct = n++; kids.push(pg+' 0 R');
+    objs[pg] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${ct} 0 R >>`;
+    objs[ct] = `<< /Length ${c.length} >>\nstream\n${c}\nendstream`;
+  });
+  objs[2] = `<< /Type /Pages /Kids [${kids.join(' ')}] /Count ${kids.length} >>`;
+  let out = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'; const off = [];
+  for(let i=1;i<n;i++){ off[i] = out.length; out += `${i} 0 obj\n${objs[i]}\nendobj\n`; }
+  const x = out.length;
+  out += `xref\n0 ${n}\n0000000000 65535 f \n` + off.slice(1).map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('') + `trailer\n<< /Size ${n} /Root 1 0 R >>\nstartxref\n${x}\n%%EOF`;
+  const bytes = new Uint8Array(out.length); for(let i=0;i<out.length;i++) bytes[i] = out.charCodeAt(i) & 255;
+  return bytes;
+}
+function pdfBaixar(bytes, nome){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes],{type:'application/pdf'})); a.download = nome;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+function extPDF(){
   const d = extDados(); if(!d) return;
-  const q = x => '"'+String(x==null?'':x).replace(/"/g,'""')+'"', n = x => String(Math.round(x*100)/100).replace('.',',');
-  const L = [['Data','Descrição','Categoria','Valor','Saldo']];
-  L.push(['','Saldo anterior','',  '', n(d.antes)]);
-  d.linhas.forEach(l=>L.push([viaData(l.data), l.desc, l.sub, n(l.valor), n(l.saldo)]));
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿'+L.map(r=>r.map(q).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
-  a.download = 'extrato-'+String(d.conta.nome).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+d.chave+'.csv';
-  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500);
+  const W = 595.28, H = 841.89, M = 42, CW = W - 2*M;
+  const VERDE = '0.231 0.431 0.345 rg', TIJOLO = '0.631 0.267 0.180 rg', TINTA = '0.118 0.165 0.184 rg', CINZA = '0.357 0.420 0.431 rg';
+  const dataX = M, descX = M+54, descW = CW-54-215, valR = M+CW-108, salR = M+CW;
+  const paginas = []; let cur, y;
+  const T = (txt, x, yy, tam, neg, cor, dir)=>{ const xx = dir ? x - pdfLargura(txt,tam,neg) : x; cur.push(`BT ${cor||TINTA} /${neg?'F2':'F1'} ${tam} Tf ${xx.toFixed(2)} ${yy.toFixed(2)} Td (${pdfTxt(txt)}) Tj ET`); };
+  const linha = (x1,y1,x2,y2,cor,esp)=>cur.push(`${cor||'0.85 0.89 0.84'} RG ${esp||0.6} w ${x1} ${y1.toFixed(2)} m ${x2} ${y2.toFixed(2)} l S`);
+  const caixa = (x,yy,w,h,cor)=>cur.push(`${cor} rg ${x.toFixed(2)} ${yy.toFixed(2)} ${w.toFixed(2)} ${h} re f`);
+  const mes = EXT_MESES[extMes.getMonth()]+' de '+extMes.getFullYear();
+  const brl = v => formatarMoeda(Math.abs(v));
+  const cabTabela = ()=>{ caixa(M, y-16, CW, 18, '0.894 0.933 0.906'); T('Data', dataX+4, y-10, 9, true, CINZA); T('Descrição', descX, y-10, 9, true, CINZA); T('Valor', valR, y-10, 9, true, CINZA, true); T('Saldo', salR-4, y-10, 9, true, CINZA, true); y -= 24; };
+  const nova = (primeira)=>{
+    cur = []; paginas.push(cur); y = H - M;
+    if(primeira){
+      T('Extrato bancário', M, y-14, 20, true, TINTA); y -= 24;
+      T('Conta: '+d.conta.nome, M, y-10, 12, true, VERDE); y -= 17;
+      T('Período: '+mes, M, y-10, 10.5, false, TINTA); y -= 15;
+      T('Gerado em '+new Date().toLocaleDateString('pt-BR')+' às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}), M, y-9, 8.5, false, CINZA); y -= 22;
+      const cx = [['Saldo anterior', d.antes, null],['Entradas', d.ent, VERDE],['Saídas', d.sai, TIJOLO],['Saldo no fim do mês', d.final, null]];
+      const cw = (CW-3*8)/4;
+      cx.forEach((c,i)=>{ const x = M + i*(cw+8); caixa(x, y-44, cw, 48, '0.945 0.957 0.945'); T(c[0], x+8, y-14, 8, true, CINZA); T(formatarMoeda(c[1]), x+8, y-33, 11.5, true, c[2] || (c[1]>=0?VERDE:TIJOLO)); });
+      y -= 62;
+    } else {
+      T('Extrato — '+d.conta.nome+' — '+mes+' (continuação)', M, y-10, 10, true, CINZA); y -= 26;
+    }
+    cabTabela();
+  };
+  nova(true);
+  const linhaSaldo = (rotulo, valor)=>{ T(rotulo, descX, y-10, 9.5, true, TINTA); T(formatarMoeda(valor), salR-4, y-10, 9.5, true, valor>=0?VERDE:TIJOLO, true); y -= 20; linha(M,y+4,M+CW,y+4); };
+  linhaSaldo('Saldo anterior', d.antes);
+  if(!d.linhas.length){ T('Nenhum movimento nesta conta neste mês.', descX, y-10, 10, false, CINZA); y -= 24; }
+  d.linhas.forEach(l=>{
+    const desc = pdfQuebrar(l.desc, descW, 9.5, false), sub = l.sub ? pdfQuebrar(l.sub, descW, 8, false)[0] : '';
+    const h = desc.length*12 + (sub?10:0) + 8;
+    if(y - h < M+30) nova(false);
+    T(viaData(l.data).slice(0,5), dataX+4, y-10, 9.5, false, TINTA);
+    desc.forEach((t,i)=>T(t, descX, y-10-i*12, 9.5, false, TINTA));
+    if(sub) T(sub, descX, y-10-desc.length*12+1, 8, false, CINZA);
+    T((l.valor>=0?'+ ':'- ')+brl(l.valor), valR, y-10, 9.5, true, l.valor>=0?VERDE:TIJOLO, true);
+    T(formatarMoeda(l.saldo), salR-4, y-10, 9.5, false, TINTA, true);
+    y -= h; linha(M, y+3, M+CW, y+3, '0.92 0.94 0.91', 0.4);
+  });
+  if(y - 40 < M+30) nova(false);
+  y -= 6; linhaSaldo('Saldo no fim do mês', d.final);
+  paginas.forEach((p,i)=>{ cur = p; linha(M, 34, M+CW, 34, '0.85 0.89 0.84'); T('Finanças Jean e Elia', M, 22, 8, false, CINZA); T('Página '+(i+1)+' de '+paginas.length, M+CW, 22, 8, false, CINZA, true); });
+  const nome = 'extrato-'+String(d.conta.nome).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+d.chave+'.pdf';
+  pdfBaixar(pdfMontar(paginas.map(p=>p.join('\n'))), nome);
+}
+
+/* =========================================================
+   IMPORTAR EXTRATO DO BANCO (arquivo .OFX)
+   Mostra o que veio no arquivo ANTES de gravar; você escolhe o que entra e a categoria de cada um.
+   O que já foi importado antes (mesmo código do banco) não entra duas vezes. Dá para desfazer a última importação.
+   ========================================================= */
+let ofxContaId = null, ofxItens = [], ofxInfo = null;
+function ofxLerTag(bloco, tag){ const m = bloco.match(new RegExp('<'+tag+'>([^<\\r\\n]*)','i')); return m ? m[1].trim() : ''; }
+function ofxNum(s){
+  let t = String(s||'').trim().replace(/\s/g,''); if(!t) return NaN;
+  if(t.includes(',') && t.includes('.')){ t = t.lastIndexOf(',') > t.lastIndexOf('.') ? t.replace(/\./g,'').replace(',','.') : t.replace(/,/g,''); }
+  else if(t.includes(',')) t = t.replace(',','.');
+  const n = Number(t); return isFinite(n) ? n : NaN;
+}
+function ofxDecodificar(buf){
+  const u8 = new Uint8Array(buf);
+  const cab = new TextDecoder('latin1').decode(u8.slice(0, 600));
+  if(/CHARSET:\s*1252|ENCODING:\s*USASCII/i.test(cab)) return new TextDecoder('windows-1252').decode(u8);
+  try{ return new TextDecoder('utf-8',{fatal:true}).decode(u8); }catch(e){ return new TextDecoder('windows-1252').decode(u8); }
+}
+function ofxAnalisar(texto){
+  const itens = []; const re = /<STMTTRN>([\s\S]*?)(?=<\/STMTTRN>|<STMTTRN>|<\/BANKTRANLIST>|<\/CCSTMTRS>|<\/STMTRS>|$)/gi; let m;
+  while((m = re.exec(texto))){
+    const b = m[1]; const valor = ofxNum(ofxLerTag(b,'TRNAMT')); const dt = ofxLerTag(b,'DTPOSTED').replace(/\D/g,'').slice(0,8);
+    if(!(isFinite(valor)) || valor===0 || dt.length!==8) continue;
+    const nome = ofxLerTag(b,'NAME'), memo = ofxLerTag(b,'MEMO');
+    let desc = (memo && nome && memo!==nome && !memo.includes(nome)) ? nome+' - '+memo : (memo||nome||'Movimento do banco');
+    itens.push({ fitid: ofxLerTag(b,'FITID'), data: dt.slice(0,4)+'-'+dt.slice(4,6)+'-'+dt.slice(6,8), valor: Math.round(Math.abs(valor)*100)/100, tipo: valor>0?'entrada':'saida', desc: desc.replace(/\s+/g,' ').slice(0,80) });
+  }
+  const sal = texto.match(/<LEDGERBAL>[\s\S]*?<BALAMT>([^<\r\n]*)[\s\S]*?<DTASOF>([^<\r\n]*)/i);
+  const conta = ofxLerTag(texto,'ACCTID'), banco = ofxLerTag(texto,'ORG') || ofxLerTag(texto,'BANKID');
+  return { itens, saldoBanco: sal ? { valor: ofxNum(sal[1]), data: String(sal[2]).replace(/\D/g,'').slice(0,8) } : null, conta, banco };
+}
+function ofxUltimoLote(contaId){
+  const lotes = {};
+  todosLancamentosLocais().filter(l=>l.contaId===contaId && l.ofxLote).forEach(l=>{ (lotes[l.ofxLote] = lotes[l.ofxLote]||[]).push(l); });
+  const ids = Object.keys(lotes).sort(); if(!ids.length) return null;
+  const id = ids[ids.length-1]; return { id, n: lotes[id].length, quando: Number(id.replace(/\D/g,'')) };
+}
+function abrirOfx(id){
+  ofxContaId = id; ofxItens = []; ofxInfo = null;
+  document.getElementById('sheetBgOfx').classList.add('open'); renderOfx();
+}
+function fecharOfx(){ document.getElementById('sheetBgOfx').classList.remove('open'); ofxContaId = null; ofxItens = []; }
+function renderOfx(){
+  const conta = carregarContas().find(c=>c.id===ofxContaId); if(!conta){ fecharOfx(); return; }
+  const box = document.getElementById('ofxConteudo'); const lote = ofxUltimoLote(conta.id);
+  if(!ofxItens.length){
+    box.innerHTML = `<h3 style="margin-bottom:4px">📥 Importar extrato (OFX) — ${esc(conta.nome)}</h3>
+      <p style="font-size:13px;color:var(--ink-soft);margin:6px 0 12px">Baixe o extrato do seu banco no formato <b>OFX</b> e escolha o arquivo aqui. Antes de gravar, você confere tudo.</p>
+      <label class="save-btn" style="display:block;text-align:center;cursor:pointer;margin:0">📂 Escolher arquivo OFX<input id="ofxArquivo" type="file" accept=".ofx,.OFX,.qfx,application/x-ofx,text/plain" style="display:none" onchange="ofxEscolheu(this)"></label>
+      ${lote ? `<div style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Última importação nesta conta: <b>${lote.n} lançamento(s)</b>.</div><button class="via-btn perigo" style="margin-top:8px" onclick="ofxDesfazer('${idSeguro(lote.id)}')">↩ Desfazer essa importação</button>` : ''}
+      <button class="cancel-link" onclick="fecharOfx()">Fechar</button>`;
+    return;
+  }
+  const cats = carregarCategorias(); const sel = (tipo,i,atual)=>`<select onchange="ofxItens[${i}].cat=this.value" style="width:100%;font-size:12px;padding:6px;border-radius:8px;border:1px solid var(--paper-line);background:#FCFAF4">${(tipo==='entrada'?cats.entrada:cats.saida).map(c=>`<option ${c.nome===atual?'selected':''} value="${esc(c.nome)}">${esc(c.nome)}</option>`).join('')}</select>`;
+  const marcados = ofxItens.filter(x=>x.marcado).length;
+  const novos = ofxItens.filter(x=>!x.jaImportado).length, dups = ofxItens.length-novos;
+  box.innerHTML = `<h3 style="margin-bottom:4px">📥 Conferir antes de importar — ${esc(conta.nome)}</h3>
+    <div style="font-size:12px;color:var(--ink-soft);margin:4px 0 8px">${ofxItens.length} movimento(s) no arquivo · ${novos} novo(s)${dups?` · ${dups} já importado(s)`:''}${ofxInfo&&ofxInfo.saldoBanco?` · saldo informado pelo banco: <b>${formatarMoeda(ofxInfo.saldoBanco.valor)}</b> em ${viaData(ofxInfo.saldoBanco.data.slice(0,4)+'-'+ofxInfo.saldoBanco.data.slice(4,6)+'-'+ofxInfo.saldoBanco.data.slice(6,8))}`:''}</div>
+    <div style="max-height:46vh;overflow-y:auto;border-top:1px solid #F1EEE3">
+    ${ofxItens.map((x,i)=>`<div class="via-rot" style="align-items:flex-start;opacity:${x.jaImportado?.5:1}">
+        <input type="checkbox" ${x.marcado?'checked':''} ${x.jaImportado?'disabled':''} onchange="ofxItens[${i}].marcado=this.checked;ofxAtualizarTotal()" style="margin-top:4px;width:20px;height:20px;flex-shrink:0">
+        <div style="flex:1;min-width:0"><div style="font-size:11px;color:var(--ink-soft)">${esc(viaData(x.data))}${x.jaImportado?' · <b>já importado</b>':x.parecido?' · <b style="color:var(--gold)">parece já lançado à mão</b>':''}</div>
+          <div style="font-size:13px;word-break:break-word">${esc(x.desc)}</div>
+          ${x.jaImportado?'':`<div style="margin-top:4px">${sel(x.tipo,i,x.cat)}</div>`}</div>
+        <b style="color:${x.tipo==='entrada'?'var(--green)':'var(--brick)'};white-space:nowrap;font-size:13px">${x.tipo==='entrada'?'+':'−'} ${formatarMoeda(x.valor)}</b></div>`).join('')}</div>
+    <button class="save-btn" id="ofxBtnImportar" style="margin-top:12px" onclick="ofxImportar()">Importar ${marcados} lançamento(s)</button>
+    <button class="cancel-link" onclick="abrirOfx('${idSeguro(ofxContaId)}')">Escolher outro arquivo</button>
+    <button class="cancel-link" onclick="fecharOfx()">Cancelar</button>`;
+}
+function ofxAtualizarTotal(){ const b = document.getElementById('ofxBtnImportar'); if(b) b.textContent = 'Importar '+ofxItens.filter(x=>x.marcado).length+' lançamento(s)'; }
+async function ofxEscolheu(input){
+  const arq = input.files && input.files[0]; if(!arq) return;
+  if(arq.size > 5*1024*1024){ await alertaGrande('O arquivo é grande demais (mais de 5 MB). Baixe um período menor no banco.','erro'); input.value=''; return; }
+  let texto; try{ texto = ofxDecodificar(await arq.arrayBuffer()); }catch(e){ await alertaGrande('Não consegui ler este arquivo.','erro'); input.value=''; return; }
+  const r = ofxAnalisar(texto);
+  if(!r.itens.length){ await alertaGrande('Não encontrei movimentos neste arquivo. Confira se é um extrato no formato OFX.','erro'); input.value=''; return; }
+  if(r.itens.length > 2000){ await alertaGrande('O arquivo tem movimentos demais ('+r.itens.length+'). Baixe um período menor no banco.','erro'); input.value=''; return; }
+  const existentes = todosLancamentosLocais();
+  const ids = new Set(existentes.filter(l=>l.contaId===ofxContaId && l.ofxId).map(l=>l.ofxId));
+  const catE = (carregarCategorias().entrada.find(c=>c.nome==='Outros')||carregarCategorias().entrada[0]||{}).nome, catS = (carregarCategorias().saida.find(c=>c.nome==='Outros')||carregarCategorias().saida[0]||{}).nome;
+  const visto = new Set();
+  ofxInfo = r;
+  ofxItens = r.itens.map(x=>{
+    const chave = x.fitid ? x.fitid : x.data+'|'+x.valor+'|'+x.tipo+'|'+x.desc;
+    const dup = ids.has(chave) || visto.has(chave); visto.add(chave);
+    const parecido = !dup && existentes.some(l=>l.contaId===ofxContaId && !l.ofxId && l.data===x.data && l.tipo===x.tipo && Math.abs(Number(l.valor)-x.valor)<0.005);
+    return Object.assign({}, x, { chave, jaImportado: dup, parecido, marcado: !dup && !parecido, cat: x.tipo==='entrada'?catE:catS });
+  });
+  renderOfx();
+}
+async function ofxImportar(){
+  if(viaOcupado) return;
+  const marcados = ofxItens.filter(x=>x.marcado && !x.jaImportado);
+  if(!marcados.length){ await alertaGrande('Nenhum movimento marcado para importar.','aviso'); return; }
+  if(!(await confirmarGrande('Importar '+marcados.length+' movimento(s) para a conta?', 'Sim, importar'))) return;
+  viaOcupado = true;
+  try{
+    const lote = 'L'+Date.now(); let base = Date.now(); const porMes = {};
+    marcados.forEach((x,i)=>{
+      const k = chaveDeData(x.data); (porMes[k] = porMes[k] || lerLS(k, [])).push({ descricao:x.desc, valor:x.valor, categoria:x.cat, subcategoria:null, contaId:ofxContaId, data:x.data, tipo:x.tipo, criadoEm:base+i, ofxId:x.fitid||x.chave, ofxLote:lote });
+    });
+    Object.keys(porMes).forEach(k=>Store.set(k, JSON.stringify(porMes[k])));
+    const n = marcados.length; fecharOfx(); renderTudo();
+    await alertaGrande(n+' lançamento(s) importado(s) com sucesso. Veja no Extrato da conta.','ok');
+  } finally { viaOcupado = false; }
+}
+async function ofxDesfazer(loteId){
+  const conta = ofxContaId; const lanc = todosLancamentosLocais().filter(l=>l.contaId===conta && l.ofxLote===loteId);
+  if(!lanc.length) return;
+  if(!(await confirmarGrande('Desfazer a importação? Os '+lanc.length+' lançamento(s) dessa importação serão apagados.', 'Sim, desfazer'))) return;
+  Object.keys(Store.cache).filter(k=>k.startsWith('lancamentos_')).forEach(k=>{
+    const lista = lerLS(k, []); const nova = lista.filter(l=>!(l.contaId===conta && l.ofxLote===loteId));
+    if(nova.length!==lista.length) Store.set(k, JSON.stringify(nova));
+  });
+  renderTudo(); renderOfx();
+  await alertaGrande('Importação desfeita.','ok');
 }
 
 /* ---------- login, bloqueio por inatividade ---------- */
