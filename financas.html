@@ -637,6 +637,10 @@
   </div>
 </div>
 
+<div class="sheet-bg" id="sheetBgExtrato" onclick="if(event.target===this) fecharExtrato()">
+  <div class="sheet" id="extConteudo"></div>
+</div>
+
 <div class="sheet-bg" id="sheetBgVia" onclick="if(event.target===this) viaFecharForm()">
   <div class="sheet" id="sheetVia"></div>
 </div>
@@ -700,6 +704,7 @@ function renderTudo(){
   if(v.id==='viewContas'){ renderContas(); renderTransferencias(); }
   if(v.id==='viewCartoes') renderCartoes();
   if(v.id==='viewViagens') renderViagens();
+  if(extContaId && document.getElementById('sheetBgExtrato').classList.contains('open')) renderExtrato();
 }
 document.querySelectorAll('input[type=text]').forEach(i => { if(!(i.maxLength > 0)) i.maxLength = 60; });
 
@@ -976,7 +981,7 @@ function renderContas(){
           <div class="nome">${esc(c.nome)}</div>
           <div class="saldo" style="color:${saldo>=0 ? 'var(--green)' : 'var(--brick)'}">${formatarMoeda(saldo)}</div>
         </div>
-        <button class="del" onclick="removerConta('${idSeguro(c.id)}')">✕</button>
+        <div style="display:flex;gap:6px;align-items:center"><button class="via-btn peq" onclick="abrirExtrato('${idSeguro(c.id)}')">📄 Extrato</button><button class="del" onclick="removerConta('${idSeguro(c.id)}')">✕</button></div>
       </div>
     `;
   }).join('');
@@ -1801,6 +1806,63 @@ function viaCSV(vid){
   const txt = '﻿' + L.map(r=>r.map(q).join(';')).join('\r\n');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
   a.download = 'viagem-'+String(v.nome).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+
+/* ---------- extrato da conta bancária (mês a mês, com saldo depois de cada movimento) ---------- */
+let extContaId = null, extMes = null;
+const EXT_MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function abrirExtrato(id){
+  extContaId = id; const m = new Date(mesAtual); extMes = new Date(m.getFullYear(), m.getMonth(), 1);
+  document.getElementById('sheetBgExtrato').classList.add('open'); renderExtrato();
+}
+function fecharExtrato(){ document.getElementById('sheetBgExtrato').classList.remove('open'); extContaId = null; }
+function extMudarMes(d){ extMes = new Date(extMes.getFullYear(), extMes.getMonth()+d, 1); renderExtrato(); }
+function movimentosConta(conta){
+  const contas = carregarContas(), nome = id => (contas.find(c=>c.id===id)||{}).nome || 'outra conta', out = [];
+  todosLancamentosLocais().filter(l=>l.contaId===conta.id).forEach(l=>out.push({ data:l.data, ordem:Number(l.criadoEm)||0, desc:l.descricao||'', sub:(l.categoria||'')+(l.subcategoria?' › '+l.subcategoria:''), valor:(l.tipo==='entrada'?1:-1)*(Number(l.valor)||0) }));
+  carregarTransferencias().forEach(t=>{
+    if(t.origemId===conta.id) out.push({ data:t.data, ordem:0, desc:'Transferência para '+nome(t.destinoId)+(t.descricao?' — '+t.descricao:''), sub:'Transferência', valor:-(Number(t.valor)||0) });
+    if(t.destinoId===conta.id) out.push({ data:t.data, ordem:0, desc:'Transferência de '+nome(t.origemId)+(t.descricao?' — '+t.descricao:''), sub:'Transferência', valor:(Number(t.valor)||0) });
+  });
+  return out.filter(m=>m.data).sort((a,b)=>a.data.localeCompare(b.data) || a.ordem-b.ordem);
+}
+function extDados(){
+  const conta = carregarContas().find(c=>c.id===extContaId); if(!conta) return null;
+  const chave = extMes.getFullYear()+'-'+String(extMes.getMonth()+1).padStart(2,'0');
+  const mov = movimentosConta(conta);
+  const antes = Math.round(((Number(conta.saldoInicial)||0) + mov.filter(m=>m.data.slice(0,7)<chave).reduce((s,m)=>s+m.valor,0))*100)/100;
+  let run = antes; const linhas = mov.filter(m=>m.data.slice(0,7)===chave).map(m=>{ run = Math.round((run+m.valor)*100)/100; return Object.assign({saldo:run}, m); });
+  const ent = linhas.filter(l=>l.valor>0).reduce((s,l)=>s+l.valor,0), sai = linhas.filter(l=>l.valor<0).reduce((s,l)=>s-l.valor,0);
+  return { conta, chave, antes, linhas, ent, sai, final:run };
+}
+function renderExtrato(){
+  const box = document.getElementById('extConteudo'); const d = extDados(); if(!d){ fecharExtrato(); return; }
+  const cor = v => v>=0 ? 'var(--green)' : 'var(--brick)';
+  box.innerHTML = `
+    <h3 style="margin-bottom:4px">📄 Extrato — ${esc(d.conta.nome)}</h3>
+    <div class="month-nav" style="margin:10px 0 12px;display:flex"><button onclick="extMudarMes(-1)">‹</button><div class="label">${EXT_MESES[extMes.getMonth()]} ${extMes.getFullYear()}</div><button onclick="extMudarMes(1)">›</button></div>
+    <div class="via-kpis" style="margin-top:0">
+      <div class="via-kpi"><small>Saldo anterior</small><b style="color:${cor(d.antes)}">${formatarMoeda(d.antes)}</b></div>
+      <div class="via-kpi"><small>Saldo no fim do mês</small><b style="color:${cor(d.final)}">${formatarMoeda(d.final)}</b></div>
+      <div class="via-kpi"><small>Entradas</small><b style="color:var(--green)">${formatarMoeda(d.ent)}</b></div>
+      <div class="via-kpi"><small>Saídas</small><b style="color:var(--brick)">${formatarMoeda(d.sai)}</b></div>
+    </div>
+    <div style="margin-top:12px">
+      ${d.linhas.length ? d.linhas.map(l=>`<div class="via-rot" style="align-items:flex-start"><div style="min-width:0"><div style="font-size:11px;color:var(--ink-soft)">${esc(viaData(l.data).slice(0,5))} · ${esc(l.sub)}</div><div style="font-size:14px">${esc(l.desc)}</div></div><div style="text-align:right;flex-shrink:0"><b style="color:${cor(l.valor)}">${l.valor>=0?'+':'−'} ${formatarMoeda(Math.abs(l.valor))}</b><div style="font-size:11px;color:var(--ink-soft)">saldo ${formatarMoeda(l.saldo)}</div></div></div>`).join('') : '<div class="empty">Nenhum movimento nesta conta neste mês.</div>'}
+    </div>
+    <div style="font-size:12px;color:var(--ink-soft);margin-top:10px">Saldo atual da conta (todos os lançamentos): <b>${formatarMoeda(saldoAtualConta(d.conta))}</b></div>
+    <button class="save-btn" style="margin-top:12px" onclick="extCSV()">⬇ Baixar este mês (CSV)</button>
+    <button class="cancel-link" onclick="fecharExtrato()">Fechar</button>`;
+}
+function extCSV(){
+  const d = extDados(); if(!d) return;
+  const q = x => '"'+String(x==null?'':x).replace(/"/g,'""')+'"', n = x => String(Math.round(x*100)/100).replace('.',',');
+  const L = [['Data','Descrição','Categoria','Valor','Saldo']];
+  L.push(['','Saldo anterior','',  '', n(d.antes)]);
+  d.linhas.forEach(l=>L.push([viaData(l.data), l.desc, l.sub, n(l.valor), n(l.saldo)]));
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿'+L.map(r=>r.map(q).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
+  a.download = 'extrato-'+String(d.conta.nome).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+d.chave+'.csv';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500);
 }
 
 /* ---------- login, bloqueio por inatividade ---------- */
