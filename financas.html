@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com; frame-src https://*.firebaseapp.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="theme-color" content="#3B6E58">
@@ -232,6 +232,43 @@
     margin-left:auto; background:var(--card); border:1px solid var(--paper-line);
     border-radius:10px; padding:7px 12px; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink-soft);
   }
+  /* ---------- Viagens ---------- */
+  .via-kpis{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;}
+  .via-kpi{background:var(--card); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow);}
+  .via-kpi small{display:block; font-size:11px; color:var(--ink-soft); font-weight:600; text-transform:uppercase; letter-spacing:.05em;}
+  .via-kpi b{display:block; font-size:18px; margin-top:4px; font-family:'Lora',serif;}
+  .via-kpi span{display:block; font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  .via-kpi.full{grid-column:1/-1;}
+  .via-card{background:var(--card); border-radius:16px; padding:14px 16px; margin-top:12px; box-shadow:var(--shadow); cursor:pointer; border:1px solid transparent;}
+  .via-card:active{border-color:var(--green);}
+  .via-card h3{margin:0; font-family:'Lora',serif; font-size:16px;}
+  .via-card .sub{font-size:12px; color:var(--ink-soft); margin-top:3px;}
+  .via-pill{display:inline-block; font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; background:var(--green-soft); color:var(--green); text-transform:uppercase; letter-spacing:.04em; white-space:nowrap;}
+  .via-pill.and{background:var(--gold-soft); color:var(--gold);}
+  .via-pill.canc{background:var(--brick-soft); color:var(--brick);}
+  .via-pill.conc{background:#E8E8E8; color:#555;}
+  .via-bar{height:8px; background:var(--green-soft); border-radius:6px; overflow:hidden; margin-top:8px;}
+  .via-bar>i{display:block; height:100%; background:var(--green); border-radius:6px;}
+  .via-bar.warn>i{background:var(--gold);}
+  .via-bar.over>i{background:var(--brick);}
+  .via-linha{display:flex; justify-content:space-between; gap:10px; font-size:12px; color:var(--ink-soft); margin-top:6px;}
+  .via-topo{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .via-acoes{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
+  .via-btn{background:var(--card); border:1px solid var(--paper-line); border-radius:10px; padding:9px 12px; font-size:13px; font-weight:600; cursor:pointer; color:var(--ink); font-family:inherit;}
+  .via-btn.verde{background:var(--green); color:#fff; border-color:var(--green);}
+  .via-btn.perigo{color:var(--brick);}
+  .via-btn.peq{padding:6px 10px; font-size:12px;}
+  .via-aviso{background:var(--brick-soft); color:var(--brick); border-radius:12px; padding:12px 14px; margin-top:12px; font-size:14px; font-weight:600;}
+  .via-aviso.ouro{background:var(--gold-soft); color:#7a5a12;}
+  .via-item{border-top:1px solid #F1EEE3; padding:12px 0;}
+  .via-item:first-child{border-top:none;}
+  .via-item .nome{font-weight:600; font-size:14px;}
+  .via-item .cat{font-size:11px; color:var(--ink-soft);}
+  .via-gasto{display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:13px; padding:7px 0 7px 12px; border-left:3px solid var(--green-soft); margin-top:6px;}
+  .via-gasto .tag{font-size:11px; font-weight:700; color:var(--green);}
+  .via-gasto .tag.pend{color:var(--gold);}
+  .via-dia{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:12px 0 4px;}
+  .via-rot{display:flex; justify-content:space-between; gap:8px; align-items:center; padding:7px 0; font-size:14px; border-bottom:1px solid #F1EEE3;}
   .view{display:none;}
   .view.active{display:block;}
 
@@ -347,8 +384,8 @@
   <div class="login-box">
     <div class="panda">🐼</div>
     <h2>Finanças Jean e Elia</h2>
-    <div class="field"><label>E-mail</label><input id="loginEmail" type="email" autocomplete="username" maxlength="120"></div>
-    <div class="field"><label>Senha</label><div style="position:relative"><input id="loginSenha" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="128" style="-webkit-text-security:disc;padding-right:56px"><button type="button" id="loginOlho" aria-label="Mostrar senha" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;font-size:22px;padding:6px;cursor:pointer">👁️</button></div></div>
+    <div class="field"><label>E-mail</label><input id="loginEmail" type="email" placeholder="seu@email.com"></div>
+    <div class="field"><label>Senha</label><div style="position:relative"><input id="loginSenha" type="password" placeholder="senha" style="padding-right:56px"><button type="button" id="loginOlho" aria-label="Mostrar senha" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;font-size:22px;padding:6px;cursor:pointer">👁️</button></div></div>
     <div id="loginErro" class="login-erro"></div>
     <button class="save-btn" onclick="entrarLogin()">Entrar</button>
   </div>
@@ -483,6 +520,10 @@
     </div>
   </div>
 
+  <div class="view" id="viewViagens">
+    <div id="viaConteudo"></div>
+  </div>
+
 </main>
 
 <button class="fab" id="fabAdd" onclick="abrirSheet()">+</button>
@@ -502,6 +543,9 @@
   </button>
   <button id="navRelatorios" onclick="mudarView('relatorios')">
     <span class="ic">📊</span>Relatórios
+  </button>
+  <button id="navViagens" onclick="mudarView('viagens')">
+    <span class="ic">🧳</span>Viagens
   </button>
 </nav>
 
@@ -593,8 +637,12 @@
   </div>
 </div>
 
+<div class="sheet-bg" id="sheetBgVia" onclick="if(event.target===this) viaFecharForm()">
+  <div class="sheet" id="sheetVia"></div>
+</div>
+
 <script>
-(function(){ const b=document.getElementById('loginOlho'), i=document.getElementById('loginSenha'); if(!b||!i) return; b.addEventListener('click',()=>{ const ver=i.style.webkitTextSecurity!=='none'; i.style.webkitTextSecurity=ver?'none':'disc'; b.textContent=ver?'🙈':'👁️'; b.setAttribute('aria-label',ver?'Esconder senha':'Mostrar senha'); i.focus(); }); i.addEventListener('keydown',e=>{ if(e.key==='Enter') entrarLogin(); }); })();
+(function(){ const b=document.getElementById('loginOlho'), i=document.getElementById('loginSenha'); if(!b||!i) return; b.addEventListener('click',()=>{ const ver=i.type==='password'; i.type=ver?'text':'password'; b.textContent=ver?'🙈':'👁️'; b.setAttribute('aria-label',ver?'Esconder senha':'Mostrar senha'); i.focus(); }); i.addEventListener('keydown',e=>{ if(e.key==='Enter') entrarLogin(); }); })();
 /* ---------- segurança: helpers ---------- */
 function esc(v){
   return String(v == null ? '' : v)
@@ -651,6 +699,7 @@ function renderTudo(){
   if(v.id==='viewRelatorios') renderRelatorios();
   if(v.id==='viewContas'){ renderContas(); renderTransferencias(); }
   if(v.id==='viewCartoes') renderCartoes();
+  if(v.id==='viewViagens') renderViagens();
 }
 document.querySelectorAll('input[type=text]').forEach(i => { if(!(i.maxLength > 0)) i.maxLength = 60; });
 
@@ -1205,10 +1254,12 @@ function mudarView(v){
   document.getElementById('view' + v.charAt(0).toUpperCase() + v.slice(1)).classList.add('active');
   document.getElementById('nav' + v.charAt(0).toUpperCase() + v.slice(1)).classList.add('active');
   document.getElementById('fabAdd').style.display = (v === 'dashboard') ? 'flex' : 'none';
+  document.querySelectorAll('.month-nav').forEach(e=>{ e.style.display = (v === 'viagens') ? 'none' : ''; });
   if(v === 'categorias') renderCategorias();
   if(v === 'relatorios') renderRelatorios();
   if(v === 'contas'){ renderContas(); renderTransferencias(); }
   if(v === 'cartoes') renderCartoes();
+  if(v === 'viagens') renderViagens();
 }
 
 /* ---------- relatórios ---------- */
@@ -1453,6 +1504,304 @@ function salvarLancamento(){
 }
 
 function alertaInline(msg){ alertaGrande(msg,'aviso'); }
+
+/* =========================================================
+   PLANEJADOR DE VIAGENS (versão pessoal)
+   Dados na chave "viagens" (mesmo jeito das contas e cartões). Cada gasto pode virar uma SAÍDA no extrato
+   pelo botão "Lançar no extrato" — uma vez só (o lançamento guarda a ligação com o gasto).
+   ========================================================= */
+const VIA_CATS = ['Passagens','Hospedagem','Alimentação','Transporte no destino','Combustível','Pedágios','Passeios e ingressos','Compras','Seguro viagem','Outros'];
+const VIA_ICONE = {'Passagens':'✈️','Hospedagem':'🏨','Alimentação':'🍽️','Transporte no destino':'🚕','Combustível':'⛽','Pedágios':'🛣️','Passeios e ingressos':'🎟️','Compras':'🛍️','Seguro viagem':'🛡️','Outros':'📦'};
+const VIA_STATUS = { planejando:'Planejando', confirmada:'Confirmada', concluida:'Concluída', cancelada:'Cancelada' };
+let viaAbertaId = null, viaForm = null, viaOcupado = false;
+
+function viaNovoId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function viaR2(x){ return Math.round(((Number(x)||0)+Number.EPSILON)*100)/100; }
+function viaLer(){ const l = Store.get('viagens', []); return Array.isArray(l) ? l : []; }
+function viaSalvar(l){ Store.set('viagens', JSON.stringify(l)); }
+function viaPorId(l, id){ return l.find(v=>v.id===id) || null; }
+function viaParseValor(s){ const t = String(s==null?'':s).replace(/[R$\s]/g,'').replace(/\./g,'').replace(',','.'); if(t==='') return NaN; const n = Number(t); return isFinite(n) ? n : NaN; }
+function viaData(iso){ if(!iso) return '—'; const p = String(iso).split('-'); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : iso; }
+function viaDias(a, b){ const pa=String(a).split('-').map(Number), pb=String(b).split('-').map(Number); return Math.round((Date.UTC(pb[0],pb[1]-1,pb[2]) - Date.UTC(pa[0],pa[1]-1,pa[2]))/86400000); }
+function viaDiaSemana(iso){ const p=String(iso).split('-').map(Number); return new Date(p[0],p[1]-1,p[2]).toLocaleDateString('pt-BR',{weekday:'long'}); }
+
+/* ---------- cálculos ---------- */
+function viaCalc(v){
+  const desp = v.despesas || [];
+  const orcado = viaR2(desp.reduce((s,d)=>s+(Number(d.orcado)||0),0));
+  const gasto = viaR2(desp.reduce((s,d)=>s+(d.gastos||[]).reduce((a,g)=>a+(Number(g.valor)||0),0),0));
+  const limite = Number(v.limite)>0 ? Number(v.limite) : 0;
+  const teto = limite>0 ? limite : orcado;
+  const saldo = viaR2(teto - gasto);
+  const pct = teto>0 ? (gasto/teto*100) : (gasto>0 ? 100 : 0);
+  const porCat = {};
+  desp.forEach(d=>{ const c=d.categoria||'Outros'; const o=porCat[c]||(porCat[c]={orcado:0,gasto:0}); o.orcado+=Number(d.orcado)||0; o.gasto+=(d.gastos||[]).reduce((a,g)=>a+(Number(g.valor)||0),0); });
+  return { orcado, gasto, limite, teto, saldo, pct, porCat, acima: teto>0 && gasto>teto+0.004, perto: teto>0 && gasto>=teto*0.9 && gasto<=teto+0.004 };
+}
+function viaStatusInfo(v){
+  const hoje = hojeISO();
+  if(v.status==='cancelada') return { txt:'Cancelada', cls:'canc' };
+  if(v.status==='concluida') return { txt:'Concluída', cls:'conc' };
+  if(v.saida && v.retorno && hoje>=v.saida && hoje<=v.retorno) return { txt:'Em andamento', cls:'and' };
+  return { txt: VIA_STATUS[v.status]||'Planejando', cls:'' };
+}
+function viaQuandoTxt(v){
+  const hoje = hojeISO();
+  if(v.status==='cancelada'||v.status==='concluida') return '';
+  if(hoje < v.saida){ const d=viaDias(hoje, v.saida); return d===1 ? 'Sai amanhã' : `Faltam ${d} dias`; }
+  if(hoje <= v.retorno){ const d=viaDias(hoje, v.retorno); return d===0 ? 'Último dia da viagem' : `Volta em ${d} dia(s)`; }
+  return 'Já terminou — marque como concluída';
+}
+function viaBarra(c){ const w = Math.max(0, Math.min(100, c.pct)); return `<div class="via-bar ${c.acima?'over':c.perto?'warn':''}"><i style="width:${w.toFixed(1)}%"></i></div>`; }
+
+/* ---------- ligação com o extrato ---------- */
+function viaLancExiste(g){ if(!g || !g.lancChave || !g.lancCriadoEm) return false; return lerLS(g.lancChave, []).some(l=>l.criadoEm===g.lancCriadoEm); }
+function viaLancRemover(g){
+  if(!g || !g.lancChave || !g.lancCriadoEm) return;
+  const lista = lerLS(g.lancChave, []);
+  const nova = lista.filter(l=>l.criadoEm!==g.lancCriadoEm);
+  if(nova.length!==lista.length) Store.set(g.lancChave, JSON.stringify(nova));
+}
+function viaCatExtratoPadrao(){
+  const nomes = carregarCategorias().saida.map(c=>c.nome);
+  return nomes.find(n=>/viag/i.test(n)) || nomes.find(n=>/lazer/i.test(n)) || nomes[0] || 'Outros';
+}
+function viaMontarLanc(v, g, criadoEm){
+  return { descricao: `Viagem ${v.nome} — ${g.descricao||'gasto'}`, valor: viaR2(g.valor), categoria: g.catExtrato||viaCatExtratoPadrao(), subcategoria:null,
+           contaId: g.contaId||null, data: g.data, tipo:'saida', criadoEm, viagemId:v.id, gastoId:g.id };
+}
+async function viaLancarGasto(vid, did, gid){
+  if(viaOcupado) return; viaOcupado = true;
+  try{
+    const lista = viaLer(), v = viaPorId(lista, vid); const d = v && (v.despesas||[]).find(x=>x.id===did); const g = d && (d.gastos||[]).find(x=>x.id===gid);
+    if(!g){ await alertaGrande('Não encontrei este gasto.','erro'); return; }
+    if(viaLancExiste(g)){ await alertaGrande('Este gasto já está no extrato. Não vou lançar de novo.','aviso'); return; }
+    if(!(Number(g.valor)>0) || !g.data){ await alertaGrande('Preencha valor e data do gasto antes de lançar.','erro'); return; }
+    const chave = chaveDeData(g.data), criadoEm = Date.now();
+    const l = lerLS(chave, []); l.push(viaMontarLanc(v, g, criadoEm));
+    Store.set(chave, JSON.stringify(l));
+    g.lancChave = chave; g.lancCriadoEm = criadoEm; viaSalvar(lista);
+    await alertaGrande(`Pronto! ${formatarMoeda(g.valor)} lançado como saída em ${viaData(g.data)}.`,'ok');
+    renderTudo();
+  } finally { viaOcupado = false; }
+}
+
+/* ---------- telas ---------- */
+function renderViagens(){
+  const box = document.getElementById('viaConteudo'); if(!box) return;
+  const lista = viaLer();
+  if(viaAbertaId && viaPorId(lista, viaAbertaId)) return viaRenderDetalhe(box, viaPorId(lista, viaAbertaId));
+  viaAbertaId = null; viaRenderLista(box, lista);
+}
+function viaRenderLista(box, lista){
+  const ativas = lista.filter(v=>v.status!=='cancelada');
+  const orcTot = viaR2(ativas.reduce((s,v)=>s+viaCalc(v).orcado,0)), gastoTot = viaR2(ativas.reduce((s,v)=>s+viaCalc(v).gasto,0));
+  const hoje = hojeISO();
+  const prox = ativas.filter(v=>v.status!=='concluida' && v.retorno>=hoje).sort((a,b)=>a.saida.localeCompare(b.saida))[0];
+  const ord = lista.slice().sort((a,b)=>{ const fa=(a.status==='cancelada'||a.status==='concluida')?1:0, fb=(b.status==='cancelada'||b.status==='concluida')?1:0; return fa-fb || a.saida.localeCompare(b.saida); });
+  box.innerHTML = `
+    <div class="via-kpis">
+      <div class="via-kpi"><small>Orçado</small><b>${formatarMoeda(orcTot)}</b><span>${ativas.length} viagem(ns)</span></div>
+      <div class="via-kpi"><small>Gasto</small><b>${formatarMoeda(gastoTot)}</b><span>${orcTot>0?Math.round(gastoTot/orcTot*100)+'% do orçado':'—'}</span></div>
+      <div class="via-kpi full"><small>Próxima viagem</small><b>${prox?esc(prox.nome):'Nenhuma planejada'}</b><span>${prox?esc((prox.destino?prox.destino+' · ':'')+viaData(prox.saida)+' · '+viaQuandoTxt(prox)):'Toque em “Nova viagem” para começar.'}</span></div>
+    </div>
+    <button class="save-btn" style="margin-top:14px;" onclick="viaAbrirForm('viagem')">+ Nova viagem</button>
+    ${ord.length ? ord.map(v=>{ const c=viaCalc(v), s=viaStatusInfo(v); return `
+      <div class="via-card" onclick="viaAbrir('${idSeguro(v.id)}')">
+        <div class="via-topo"><div><h3>🧳 ${esc(v.nome)}</h3><div class="sub">${v.destino?'📍 '+esc(v.destino)+' · ':''}${viaData(v.saida)} → ${viaData(v.retorno)}</div></div><span class="via-pill ${s.cls}">${esc(s.txt)}</span></div>
+        ${viaBarra(c)}
+        <div class="via-linha"><span>Gasto ${formatarMoeda(c.gasto)}</span><span>${c.teto>0?(c.limite>0?'Limite ':'Orçado ')+formatarMoeda(c.teto):'Sem orçamento'}</span></div>
+      </div>`; }).join('') : '<div class="card"><div class="empty">Nenhuma viagem ainda. Cadastre a primeira!</div></div>'}
+    <div style="height:90px"></div>`;
+}
+function viaAbrir(id){ viaAbertaId = id; renderViagens(); window.scrollTo(0,0); }
+function viaVoltar(){ viaAbertaId = null; renderViagens(); window.scrollTo(0,0); }
+
+function viaRenderDetalhe(box, v){
+  const c = viaCalc(v), s = viaStatusInfo(v), vid = idSeguro(v.id);
+  const dias = viaDias(v.saida, v.retorno) + 1;
+  const quando = viaQuandoTxt(v);
+  const cats = Object.keys(c.porCat);
+  const rot = (v.roteiro||[]).slice().sort((a,b)=>(a.data+(a.hora||'')).localeCompare(b.data+(b.hora||'')));
+  let diaAnt = '';
+  box.innerHTML = `
+    <div class="card">
+      <div class="via-topo"><div><h2 style="margin:0">🧳 ${esc(v.nome)}</h2>
+        <div class="sub" style="font-size:13px;color:var(--ink-soft);margin-top:4px">${v.destino?'📍 '+esc(v.destino)+'<br>':''}${viaData(v.saida)} → ${viaData(v.retorno)} · ${dias} dia(s)${quando?' · <b>'+esc(quando)+'</b>':''}</div>
+        ${v.viajantes?`<div style="font-size:12px;color:var(--ink-soft);margin-top:4px">👥 ${esc(v.viajantes)}</div>`:''}
+        ${v.obs?`<div style="font-size:12px;color:var(--ink-soft);margin-top:4px">📝 ${esc(v.obs)}</div>`:''}</div>
+        <span class="via-pill ${s.cls}">${esc(s.txt)}</span></div>
+      <div class="via-acoes">
+        <button class="via-btn" onclick="viaVoltar()">← Todas</button>
+        <button class="via-btn" onclick="viaAbrirForm('viagem','${vid}')">✎ Editar</button>
+        <button class="via-btn" onclick="viaCSV('${vid}')">⬇ CSV</button>
+        <button class="via-btn perigo" onclick="viaExcluirViagem('${vid}')">✕ Apagar</button>
+      </div>
+    </div>
+    ${c.acima ? `<div class="via-aviso">⚠️ Passou do ${c.limite>0?'limite':'orçado'} em ${formatarMoeda(-c.saldo)}.</div>` : c.perto ? `<div class="via-aviso ouro">Atenção: já usou ${Math.round(c.pct)}% do ${c.limite>0?'limite':'orçado'}.</div>` : ''}
+    <div class="via-kpis">
+      <div class="via-kpi"><small>Orçado</small><b>${formatarMoeda(c.orcado)}</b><span>${c.limite>0?'Limite: '+formatarMoeda(c.limite):'soma dos itens'}</span></div>
+      <div class="via-kpi"><small>Gasto</small><b>${formatarMoeda(c.gasto)}</b><span>${Math.round(c.pct)}% de ${formatarMoeda(c.teto)}</span></div>
+      <div class="via-kpi full"><small>${c.saldo>=0?'Ainda pode gastar':'Estourou'}</small><b style="color:${c.saldo>=0?'var(--green)':'var(--brick)'}">${formatarMoeda(Math.abs(c.saldo))}</b>${viaBarra(c)}</div>
+    </div>
+    <div class="card">
+      <h2>💰 Orçamento e gastos</h2>
+      ${(v.despesas||[]).length ? (v.despesas||[]).map(d=>{ const did=idSeguro(d.id); const gd=viaR2((d.gastos||[]).reduce((a,g)=>a+(Number(g.valor)||0),0)); const od=Number(d.orcado)||0; const dc={pct:od>0?gd/od*100:(gd>0?100:0),acima:od>0&&gd>od+0.004,perto:od>0&&gd>=od*0.9&&gd<=od+0.004};
+        return `<div class="via-item">
+          <div class="via-topo"><div><div class="nome">${VIA_ICONE[d.categoria]||'📦'} ${esc(d.descricao||d.categoria)}</div><div class="cat">${esc(d.categoria||'')}</div></div>
+            <div style="text-align:right;font-size:13px"><b>${formatarMoeda(gd)}</b><div style="font-size:11px;color:var(--ink-soft)">de ${formatarMoeda(od)}</div></div></div>
+          ${viaBarra(dc)}
+          ${(d.gastos||[]).map(g=>{ const gid=idSeguro(g.id); const noExtrato=viaLancExiste(g); const perdeu=!!g.lancCriadoEm && !noExtrato;
+            return `<div class="via-gasto"><div><div>${esc(g.descricao||'Gasto')} · <b>${formatarMoeda(g.valor)}</b></div><div style="font-size:11px;color:var(--ink-soft)">${viaData(g.data)} · ${noExtrato?'<span class="tag">✅ no extrato</span>':perdeu?'<span class="tag pend">sumiu do extrato</span>':'<span class="tag pend">ainda fora do extrato</span>'}</div></div>
+              <div style="display:flex;gap:6px;flex-shrink:0">${noExtrato?'':`<button class="via-btn peq verde" onclick="viaLancarGasto('${vid}','${did}','${gid}')">📒 Lançar</button>`}<button class="via-btn peq" onclick="viaAbrirForm('gasto','${vid}','${did}','${gid}')">✎</button><button class="via-btn peq perigo" onclick="viaExcluirGasto('${vid}','${did}','${gid}')">✕</button></div></div>`; }).join('')}
+          <div class="via-acoes" style="margin-top:8px"><button class="via-btn peq" onclick="viaAbrirForm('gasto','${vid}','${did}')">+ Gasto</button><button class="via-btn peq" onclick="viaAbrirForm('despesa','${vid}','${did}')">✎ Item</button><button class="via-btn peq perigo" onclick="viaExcluirDespesa('${vid}','${did}')">✕ Item</button></div>
+        </div>`; }).join('') : '<div class="empty">Nenhum item no orçamento. Adicione passagens, hospedagem, alimentação…</div>'}
+      <button class="save-btn" style="margin-top:12px;" onclick="viaAbrirForm('despesa','${vid}')">+ Item do orçamento</button>
+    </div>
+    ${cats.length ? `<div class="card"><h2>📊 Por categoria</h2>${cats.map(k=>{ const o=c.porCat[k]; const pc=o.orcado>0?o.gasto/o.orcado*100:(o.gasto>0?100:0); return `<div style="margin-bottom:10px"><div class="via-linha" style="margin:0;color:var(--ink)"><span>${VIA_ICONE[k]||'📦'} ${esc(k)}</span><span><b>${formatarMoeda(o.gasto)}</b> / ${formatarMoeda(o.orcado)}</span></div>${viaBarra({pct:pc,acima:o.orcado>0&&o.gasto>o.orcado+0.004,perto:o.orcado>0&&o.gasto>=o.orcado*0.9&&o.gasto<=o.orcado+0.004})}</div>`; }).join('')}</div>` : ''}
+    <div class="card">
+      <h2>🗺️ Roteiro</h2>
+      ${rot.length ? rot.map(r=>{ const cab = r.data!==diaAnt ? `<div class="via-dia">${esc(viaDiaSemana(r.data))} · ${viaData(r.data)}</div>` : ''; diaAnt=r.data;
+        return cab + `<div class="via-rot"><span>${r.hora?'<b>'+esc(r.hora)+'</b> ':''}${esc(r.texto)}</span><span style="display:flex;gap:6px"><button class="via-btn peq" onclick="viaAbrirForm('roteiro','${vid}','${idSeguro(r.id)}')">✎</button><button class="via-btn peq perigo" onclick="viaExcluirRoteiro('${vid}','${idSeguro(r.id)}')">✕</button></span></div>`; }).join('') : '<div class="empty">Nada no roteiro ainda.</div>'}
+      <button class="save-btn" style="margin-top:12px;" onclick="viaAbrirForm('roteiro','${vid}')">+ Passeio ou compromisso</button>
+    </div>
+    <div style="height:90px"></div>`;
+}
+
+/* ---------- formulários ---------- */
+function viaOpcoes(lista, atual){ return lista.map(x=>`<option value="${esc(x)}" ${x===atual?'selected':''}>${esc(x)}</option>`).join(''); }
+function viaAbrirForm(tipo, vid, did, gid){
+  viaForm = { tipo, vid: vid||null, did: did||null, gid: gid||null };
+  const lista = viaLer(); const v = vid ? viaPorId(lista, vid) : null;
+  const d = v && did ? (v.despesas||[]).find(x=>x.id===did) : null; const g = d && gid ? (d.gastos||[]).find(x=>x.id===gid) : null;
+  const r = (tipo==='roteiro' && v && did) ? (v.roteiro||[]).find(x=>x.id===did) : null;
+  let h = '';
+  if(tipo==='viagem'){
+    const x = v || {};
+    h = `<h3>${v?'Editar viagem':'Nova viagem'}</h3>
+      <div class="field"><label>Nome da viagem</label><input id="vfNome" type="text" maxlength="60" placeholder="Ex: Férias em Floripa" value="${esc(x.nome||'')}"></div>
+      <div class="field"><label>Destino</label><input id="vfDestino" type="text" maxlength="60" placeholder="Cidade ou país" value="${esc(x.destino||'')}"></div>
+      <div class="field"><label>Saída</label><input id="vfSaida" type="date" value="${esc(x.saida||'')}"></div>
+      <div class="field"><label>Retorno</label><input id="vfRetorno" type="date" value="${esc(x.retorno||'')}"></div>
+      <div class="field"><label>Quem vai</label><input id="vfViajantes" type="text" maxlength="60" placeholder="Ex: Jean e Elia" value="${esc(x.viajantes||'')}"></div>
+      <div class="field"><label>Limite de gasto (R$) — opcional</label><input id="vfLimite" type="text" inputmode="decimal" maxlength="14" placeholder="Se vazio, vale a soma dos itens" value="${x.limite?String(x.limite).replace('.',','):''}"></div>
+      <div class="field"><label>Situação</label><select id="vfStatus">${Object.keys(VIA_STATUS).map(k=>`<option value="${k}" ${((x.status||'planejando')===k)?'selected':''}>${VIA_STATUS[k]}</option>`).join('')}</select></div>
+      <div class="field"><label>Observações</label><input id="vfObs" type="text" maxlength="120" value="${esc(x.obs||'')}"></div>
+      <button class="save-btn" onclick="viaSalvarViagem()">Salvar viagem</button>`;
+  } else if(tipo==='despesa'){
+    const x = d || {};
+    h = `<h3>${d?'Editar item':'Novo item do orçamento'}</h3>
+      <div class="field"><label>Categoria</label><select id="vfCat">${viaOpcoes(VIA_CATS, x.categoria||'Passagens')}</select></div>
+      <div class="field"><label>Descrição</label><input id="vfDesc" type="text" maxlength="60" placeholder="Ex: Hotel 3 diárias" value="${esc(x.descricao||'')}"></div>
+      <div class="field"><label>Valor orçado (R$)</label><input id="vfOrcado" type="text" inputmode="decimal" maxlength="14" placeholder="0,00" value="${x.orcado!=null?String(x.orcado).replace('.',','):''}"></div>
+      <button class="save-btn" onclick="viaSalvarDespesa()">Salvar item</button>`;
+  } else if(tipo==='gasto'){
+    const x = g || {}; const contas = carregarContas(); const cats = carregarCategorias().saida.map(c=>c.nome);
+    h = `<h3>${g?'Editar gasto':'Novo gasto'}</h3>
+      <div class="field"><label>O que foi</label><input id="vfDesc" type="text" maxlength="60" placeholder="Ex: Almoço" value="${esc(x.descricao||'')}"></div>
+      <div class="field"><label>Valor (R$)</label><input id="vfValor" type="text" inputmode="decimal" maxlength="14" placeholder="0,00" value="${x.valor!=null?String(x.valor).replace('.',','):''}"></div>
+      <div class="field"><label>Data</label><input id="vfData" type="date" value="${esc(x.data||hojeISO())}"></div>
+      <div class="field"><label>Conta do pagamento (para o extrato)</label><select id="vfConta"><option value="">Dinheiro / sem conta</option>${contas.map(c=>`<option value="${esc(c.id)}" ${c.id===x.contaId?'selected':''}>${esc(c.nome)}</option>`).join('')}</select></div>
+      <div class="field"><label>Categoria no extrato</label><select id="vfCatExtrato">${viaOpcoes(cats, x.catExtrato||viaCatExtratoPadrao())}</select></div>
+      <button class="save-btn" onclick="viaSalvarGasto()">Salvar gasto</button>`;
+  } else if(tipo==='roteiro'){
+    const x = r || {};
+    h = `<h3>${r?'Editar roteiro':'Novo no roteiro'}</h3>
+      <div class="field"><label>Dia</label><input id="vfData" type="date" value="${esc(x.data||(v&&v.saida)||hojeISO())}"></div>
+      <div class="field"><label>Hora (opcional)</label><input id="vfHora" type="time" value="${esc(x.hora||'')}"></div>
+      <div class="field"><label>O que vai fazer</label><input id="vfTexto" type="text" maxlength="100" placeholder="Ex: Passeio de barco" value="${esc(x.texto||'')}"></div>
+      <button class="save-btn" onclick="viaSalvarRoteiro()">Salvar</button>`;
+  }
+  document.getElementById('sheetVia').innerHTML = h + '<button class="cancel-link" onclick="viaFecharForm()">Cancelar</button>';
+  document.getElementById('sheetBgVia').classList.add('open');
+}
+function viaFecharForm(){ document.getElementById('sheetBgVia').classList.remove('open'); viaForm = null; }
+const viaVal = id => (document.getElementById(id)||{}).value || '';
+
+async function viaSalvarViagem(){
+  const nome = viaVal('vfNome').trim(), saida = viaVal('vfSaida'), retorno = viaVal('vfRetorno');
+  if(!nome){ return alertaGrande('Informe o nome da viagem.','erro'); }
+  if(!saida || !retorno){ return alertaGrande('Informe a data de saída e a de retorno.','erro'); }
+  if(retorno < saida){ return alertaGrande('O retorno não pode ser antes da saída.','erro'); }
+  const limStr = viaVal('vfLimite').trim(); let limite = 0;
+  if(limStr){ limite = viaParseValor(limStr); if(!(limite>=0 && limite<1e9)){ return alertaGrande('O limite está inválido. Use só números, como 3500,00.','erro'); } }
+  const lista = viaLer(); let v = viaForm.vid ? viaPorId(lista, viaForm.vid) : null;
+  if(!v){ v = { id:viaNovoId(), despesas:[], roteiro:[], criadoEm:new Date().toISOString() }; lista.push(v); }
+  Object.assign(v, { nome, destino:viaVal('vfDestino').trim(), saida, retorno, viajantes:viaVal('vfViajantes').trim(), limite:viaR2(limite), status:viaVal('vfStatus')||'planejando', obs:viaVal('vfObs').trim() });
+  viaSalvar(lista); viaAbertaId = v.id; viaFecharForm(); renderTudo();
+}
+async function viaSalvarDespesa(){
+  const orc = viaParseValor(viaVal('vfOrcado'));
+  if(!(orc>=0 && orc<1e9)){ return alertaGrande('Informe o valor orçado, como 450,00.','erro'); }
+  const lista = viaLer(), v = viaPorId(lista, viaForm.vid); if(!v) return;
+  let d = viaForm.did ? (v.despesas||[]).find(x=>x.id===viaForm.did) : null;
+  if(!d){ d = { id:viaNovoId(), gastos:[] }; (v.despesas = v.despesas||[]).push(d); }
+  d.categoria = viaVal('vfCat') || 'Outros'; d.descricao = viaVal('vfDesc').trim() || d.categoria; d.orcado = viaR2(orc);
+  viaSalvar(lista); viaFecharForm(); renderTudo();
+}
+async function viaSalvarGasto(){
+  const valor = viaParseValor(viaVal('vfValor')), data = viaVal('vfData');
+  if(!(valor>0 && valor<1e9)){ return alertaGrande('Informe o valor do gasto, como 85,50.','erro'); }
+  if(!data){ return alertaGrande('Informe a data do gasto.','erro'); }
+  const lista = viaLer(), v = viaPorId(lista, viaForm.vid); const d = v && (v.despesas||[]).find(x=>x.id===viaForm.did); if(!d) return;
+  let g = viaForm.gid ? (d.gastos||[]).find(x=>x.id===viaForm.gid) : null;
+  if(!g){ g = { id:viaNovoId() }; (d.gastos = d.gastos||[]).push(g); }
+  const jaNoExtrato = viaLancExiste(g);
+  Object.assign(g, { descricao:viaVal('vfDesc').trim() || d.descricao || d.categoria, valor:viaR2(valor), data, contaId:viaVal('vfConta')||null, catExtrato:viaVal('vfCatExtrato')||viaCatExtratoPadrao() });
+  if(jaNoExtrato){   // gasto já lançado: mantém o extrato igual ao gasto (move de mês se a data mudou)
+    const criadoEm = g.lancCriadoEm; viaLancRemover(g);
+    const chave = chaveDeData(g.data); const l = lerLS(chave, []); l.push(viaMontarLanc(v, g, criadoEm)); Store.set(chave, JSON.stringify(l)); g.lancChave = chave;
+  }
+  viaSalvar(lista); viaFecharForm(); renderTudo();
+}
+async function viaSalvarRoteiro(){
+  const data = viaVal('vfData'), texto = viaVal('vfTexto').trim();
+  if(!data || !texto){ return alertaGrande('Informe o dia e o que vai fazer.','erro'); }
+  const lista = viaLer(), v = viaPorId(lista, viaForm.vid); if(!v) return;
+  let r = viaForm.did ? (v.roteiro||[]).find(x=>x.id===viaForm.did) : null;
+  if(!r){ r = { id:viaNovoId() }; (v.roteiro = v.roteiro||[]).push(r); }
+  Object.assign(r, { data, hora:viaVal('vfHora'), texto });
+  viaSalvar(lista); viaFecharForm(); renderTudo();
+}
+
+/* ---------- apagar (sempre com confirmação grande) ---------- */
+function viaTodosGastos(v){ const out=[]; (v.despesas||[]).forEach(d=>(d.gastos||[]).forEach(g=>out.push(g))); return out; }
+async function viaExcluirGasto(vid, did, gid){
+  const lista = viaLer(), v = viaPorId(lista, vid); const d = v && (v.despesas||[]).find(x=>x.id===did); const g = d && (d.gastos||[]).find(x=>x.id===gid); if(!g) return;
+  const extra = viaLancExiste(g) ? '\n\nEle já está no extrato: a saída também será apagada de lá.' : '';
+  if(!(await confirmarGrande('Apagar este gasto de '+formatarMoeda(g.valor)+'?'+extra))) return;
+  viaLancRemover(g); d.gastos = d.gastos.filter(x=>x.id!==gid); viaSalvar(lista); renderTudo();
+}
+async function viaExcluirDespesa(vid, did){
+  const lista = viaLer(), v = viaPorId(lista, vid); const d = v && (v.despesas||[]).find(x=>x.id===did); if(!d) return;
+  const n = (d.gastos||[]).length, ext = (d.gastos||[]).filter(viaLancExiste).length;
+  if(!(await confirmarGrande('Apagar o item "'+(d.descricao||d.categoria)+'"'+(n?' e seus '+n+' gasto(s)':'')+'?'+(ext?'\n\n'+ext+' gasto(s) já estão no extrato e também serão apagados de lá.':'')))) return;
+  (d.gastos||[]).forEach(viaLancRemover); v.despesas = v.despesas.filter(x=>x.id!==did); viaSalvar(lista); renderTudo();
+}
+async function viaExcluirRoteiro(vid, rid){
+  if(!(await confirmarGrande('Apagar este item do roteiro?'))) return;
+  const lista = viaLer(), v = viaPorId(lista, vid); if(!v) return; v.roteiro = (v.roteiro||[]).filter(x=>x.id!==rid); viaSalvar(lista); renderTudo();
+}
+async function viaExcluirViagem(vid){
+  const lista = viaLer(), v = viaPorId(lista, vid); if(!v) return;
+  const gs = viaTodosGastos(v), ext = gs.filter(viaLancExiste).length;
+  if(!(await confirmarGrande('Apagar a viagem "'+v.nome+'" com tudo dentro (orçamento, gastos e roteiro)?'+(ext?'\n\n'+ext+' gasto(s) já estão no extrato e também serão apagados de lá.':'')))) return;
+  gs.forEach(viaLancRemover); viaSalvar(lista.filter(x=>x.id!==vid)); viaAbertaId = null; renderTudo();
+}
+
+/* ---------- CSV ---------- */
+function viaCSV(vid){
+  const v = viaPorId(viaLer(), vid); if(!v) return;
+  const q = x => '"'+String(x==null?'':x).replace(/"/g,'""')+'"', num = x => String(viaR2(x)).replace('.',',');
+  const L = [['Viagem','Destino','Saída','Retorno','Item','Categoria','Orçado','Gasto','Data do gasto','Valor','No extrato']];
+  (v.despesas||[]).forEach(d=>{
+    if(!(d.gastos||[]).length) L.push([v.nome,v.destino,viaData(v.saida),viaData(v.retorno),d.descricao,d.categoria,num(d.orcado),'','','','']);
+    (d.gastos||[]).forEach((g,i)=>L.push([v.nome,v.destino,viaData(v.saida),viaData(v.retorno),d.descricao,d.categoria,i===0?num(d.orcado):'',g.descricao,viaData(g.data),num(g.valor),viaLancExiste(g)?'sim':'não']));
+  });
+  const txt = '﻿' + L.map(r=>r.map(q).join(';')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
+  a.download = 'viagem-'+String(v.nome).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
 
 /* ---------- login, bloqueio por inatividade ---------- */
 let tentativasLogin = 0, bloqueioAte = 0, timerInatividade = null;
