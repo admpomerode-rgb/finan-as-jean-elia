@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com; frame-src https://*.firebaseapp.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="robots" content="noindex, nofollow, noarchive">
-<meta name="theme-color" content="#3B6E58">
+<meta name="theme-color" content="#14315C">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" type="image/png" sizes="32x32" href="financas-favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="financas-apple-touch-icon.png">
 <link rel="manifest" href="financas-manifest.json">
 <meta name="referrer" content="no-referrer">
-<title>Finanças Jean e Elia</title>
+<title>Finanças · Elia &amp; Jean</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -20,18 +20,23 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
   :root{
-    --paper:#EEF3ED;
-    --paper-line:#D9E3D6;
-    --ink:#1E2A2F;
-    --ink-soft:#5B6B6E;
-    --green:#3B6E58;
-    --green-soft:#E4EEE7;
-    --brick:#A1442E;
-    --brick-soft:#F5E4DF;
-    --gold:#B8892B;
-    --gold-soft:#F3E9D2;
+    --paper:#F5F7FA;
+    --paper-line:#E3E7EE;
+    --ink:#0B0F14;
+    --ink-soft:#5B6472;
+    --green:#1E9E6B;
+    --green-soft:#E6F6EE;
+    --brick:#D5473F;
+    --brick-soft:#FDEEED;
+    --gold:#D98F2B;
+    --gold-soft:#FDF3E5;
     --card:#FFFFFF;
-    --shadow: 0 1px 2px rgba(30,42,47,.06), 0 4px 14px rgba(30,42,47,.05);
+    --ac:#3B6FE0;
+    --ac2:#14315C;
+    --teal:#2EE6C5;
+    --grad:linear-gradient(135deg,#17B8A0 0%,#2F8FE8 100%);
+    --navy:linear-gradient(135deg,#0B1A33 0%,#14315C 60%,#1B3D78 100%);
+    --shadow: 0 1px 2px rgba(11,15,20,.04), 0 12px 30px -14px rgba(20,49,92,.22);
   }
   *{box-sizing:border-box;}
   body{
@@ -139,13 +144,13 @@
   .prolabore .amount{font-family:'Lora',serif; font-weight:700; font-size:22px; color:var(--gold);}
   .prolabore .status{font-size:12px; color:var(--ink-soft); margin-top:4px;}
   .dot{width:8px; height:8px; border-radius:50%; display:inline-block;}
-  .dot.ok{background:#3B6E58;}
+  .dot.ok{background:#1E9E6B;}
   .dot.wait{background:#B8892B;}
   .dot.off{background:#B0403A;}
 
   .lanc{
     display:flex; justify-content:space-between; align-items:center;
-    padding:9px 0; border-bottom:1px solid #F1EEE3;
+    padding:9px 0; border-bottom:1px solid #EEF1F6;
   }
   .lanc:last-child{border-bottom:none;}
   .lanc .desc{font-size:14px; font-weight:500;}
@@ -161,7 +166,7 @@
 
   .transf-item{
     display:flex; align-items:center; justify-content:space-between;
-    padding:10px 0; border-bottom:1px solid #F1EEE3;
+    padding:10px 0; border-bottom:1px solid #EEF1F6;
   }
   .transf-item:last-child{border-bottom:none;}
   .transf-item .rota{font-size:13px; font-weight:600;}
@@ -174,7 +179,7 @@
     width:56px; height:56px; border-radius:50%;
     display:flex; align-items:center; justify-content:center; line-height:1; padding:0 0 3px;
     background:var(--green); color:#fff; font-size:26px;
-    border:none; box-shadow:0 6px 18px rgba(59,110,88,.4);
+    border:none; box-shadow:0 6px 18px rgba(23,184,160,.45);
     cursor:pointer;
   }
 
@@ -194,12 +199,12 @@
   .field input, .field select{
     width:100%; padding:10px 12px; border-radius:10px;
     border:1px solid var(--paper-line); font-size:14px; font-family:inherit;
-    background:#FCFAF4;
+    background:#F5F7FA;
   }
   .seg{display:flex; gap:8px; margin-bottom:14px;}
   .seg button{
     flex:1; padding:10px; border-radius:10px; border:1px solid var(--paper-line);
-    background:#FCFAF4; font-weight:600; font-size:13px; cursor:pointer; color:var(--ink-soft);
+    background:#F5F7FA; font-weight:600; font-size:13px; cursor:pointer; color:var(--ink-soft);
   }
   .seg button.active.in{background:var(--green-soft); color:var(--green); border-color:var(--green);}
   .seg button.active.out{background:var(--brick-soft); color:var(--brick); border-color:var(--brick);}
@@ -261,7 +266,7 @@
   .via-btn.peq{padding:6px 10px; font-size:12px;}
   .via-aviso{background:var(--brick-soft); color:var(--brick); border-radius:12px; padding:12px 14px; margin-top:12px; font-size:14px; font-weight:600;}
   .via-aviso.ouro{background:var(--gold-soft); color:#7a5a12;}
-  .via-item{border-top:1px solid #F1EEE3; padding:12px 0;}
+  .via-item{border-top:1px solid #EEF1F6; padding:12px 0;}
   .via-item:first-child{border-top:none;}
   .via-item .nome{font-weight:600; font-size:14px;}
   .via-item .cat{font-size:11px; color:var(--ink-soft);}
@@ -269,7 +274,7 @@
   .via-gasto .tag{font-size:11px; font-weight:700; color:var(--green);}
   .via-gasto .tag.pend{color:var(--gold);}
   .via-dia{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:12px 0 4px;}
-  .via-rot{display:flex; justify-content:space-between; gap:8px; align-items:center; padding:7px 0; font-size:14px; border-bottom:1px solid #F1EEE3;}
+  .via-rot{display:flex; justify-content:space-between; gap:8px; align-items:center; padding:7px 0; font-size:14px; border-bottom:1px solid #EEF1F6;}
 
   /* ---------- menu da bolinha, aba "Mais" ---------- */
   .fab-menu{position:fixed; right:20px; bottom:calc(142px + env(safe-area-inset-bottom)); z-index:46; display:none; flex-direction:column; gap:10px; align-items:flex-end;}
@@ -303,7 +308,7 @@
   }
   .cat-item{
     display:flex; align-items:center; justify-content:space-between;
-    padding:10px 0; border-bottom:1px solid #F1EEE3;
+    padding:10px 0; border-bottom:1px solid #EEF1F6;
   }
   .cat-item:last-child{border-bottom:none;}
   .cat-item .nome{font-size:14px; font-weight:500; display:flex; align-items:center; gap:8px;}
@@ -315,7 +320,7 @@
   .add-cat-row{display:flex; gap:8px; margin-top:6px;}
   .add-cat-row input{
     flex:1; padding:9px 12px; border-radius:10px; border:1px solid var(--paper-line);
-    font-size:13px; font-family:inherit; background:#FCFAF4;
+    font-size:13px; font-family:inherit; background:#F5F7FA;
   }
   .add-cat-row button{
     background:var(--ink); color:#fff; border:none; border-radius:10px;
@@ -340,18 +345,18 @@
 
   .rep-row{
     display:flex; justify-content:space-between; align-items:center;
-    padding:9px 0; border-bottom:1px solid #F1EEE3;
+    padding:9px 0; border-bottom:1px solid #EEF1F6;
   }
   .rep-row:last-child{border-bottom:none;}
   .rep-row .nome{font-size:14px; font-weight:500;}
   .rep-bar{
-    height:6px; border-radius:4px; background:#F1EEE3; margin-top:5px; overflow:hidden;
+    height:6px; border-radius:4px; background:#EEF1F6; margin-top:5px; overflow:hidden;
   }
   .rep-bar span{display:block; height:100%; background:var(--brick);}
   .rep-bar.in span{background:var(--green);}
   .conta-item{
     display:flex; align-items:center; justify-content:space-between;
-    padding:12px 0; border-bottom:1px solid #F1EEE3;
+    padding:12px 0; border-bottom:1px solid #EEF1F6;
   }
   .conta-item:last-child{border-bottom:none;}
   .conta-item .nome{font-size:14px; font-weight:600;}
@@ -360,20 +365,20 @@
   .conta-item .del:hover{color:var(--brick);}
 
   .cartao-item{
-    padding:12px 0; border-bottom:1px solid #F1EEE3;
+    padding:12px 0; border-bottom:1px solid #EEF1F6;
   }
   .cartao-item:last-child{border-bottom:none;}
   .cartao-item .topo{display:flex; justify-content:space-between; align-items:flex-start;}
   .cartao-item .nome{font-size:14px; font-weight:600;}
   .cartao-item .fatura{font-family:'Lora',serif; font-weight:700; font-size:16px; margin-top:2px; color:var(--brick);}
   .cartao-item .venc{font-size:12px; color:var(--ink-soft);}
-  .cartao-item .limite-bar{height:6px; border-radius:4px; background:#F1EEE3; margin-top:8px; overflow:hidden;}
+  .cartao-item .limite-bar{height:6px; border-radius:4px; background:#EEF1F6; margin-top:8px; overflow:hidden;}
   .cartao-item .limite-bar span{display:block; height:100%; background:var(--brick);}
   .cartao-item .limite-txt{font-size:11px; color:var(--ink-soft); margin-top:4px;}
   .cartao-item .acoes{display:flex; gap:8px; margin-top:10px;}
   .cartao-item .acoes button{
     flex:1; padding:8px; border-radius:9px; border:1px solid var(--paper-line);
-    background:#FCFAF4; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);
+    background:#F5F7FA; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);
   }
   .cartao-item .acoes .del{flex:0 0 auto; border:none; background:none; color:var(--ink-soft);}
   .alerta-bg{position:fixed; inset:0; background:rgba(30,42,47,.6); display:flex; align-items:center; justify-content:center; padding:20px; z-index:200;}
@@ -438,6 +443,48 @@
     body{padding-left:250px;} .bottom-nav{width:250px;}
     header.top, main{max-width:1320px;}
   }
+
+  /* ===== Padrão visual VK (igual ao Livro Caixa e ao Caixa VK): azul-marinho, verde-água e azul ===== */
+  body{background:radial-gradient(circle at 1px 1px,rgba(20,49,92,.07) 1px,transparent 1.5px) 0 0/22px 22px fixed,#F5F7FA;}
+  header.top{margin:0 0 14px; padding:18px 20px 16px; background:var(--navy); color:#fff; border-bottom:2px solid rgba(46,230,197,.55); box-shadow:0 10px 30px -16px rgba(20,49,92,.6);}
+  header.top .eyebrow{color:#7FE9D6; text-transform:none; letter-spacing:.02em; font-size:15px; font-weight:600;} header.top h1{color:#fff; font-weight:700; letter-spacing:-.01em;}
+  header.top .panda{filter:drop-shadow(0 2px 6px rgba(0,0,0,.35));}
+  .sair-btn{background:rgba(255,255,255,.12)!important; color:#fff!important; border:1px solid rgba(255,255,255,.28)!important; border-radius:10px!important;}
+  .month-nav button{border-radius:12px; border-color:#D5DDEB;} .month-nav .label{color:var(--ac2); font-weight:700;}
+  .hero{background:var(--navy); border:1px solid rgba(46,230,197,.35); border-radius:22px; box-shadow:0 20px 50px -22px rgba(20,49,92,.65);}
+  .hero::before{background:radial-gradient(circle at 85% -10%, rgba(46,230,197,.40), transparent 55%);}
+  .hero .sub .in b{color:#7FE9D6;} .hero .sub .out b{color:#FF9C94;}
+  .card{border-radius:16px; border:1px solid var(--paper-line); border-top:3px solid var(--teal);}
+  .card h2{color:var(--ac2);}
+  .save-btn{background:var(--grad); box-shadow:0 8px 18px -8px rgba(23,184,160,.75); font-weight:700;}
+  .save-btn:active{filter:brightness(.94);}
+  .fab{background:var(--grad);} .via-btn.verde,.fab-menu button#fabAplicar{background:var(--grad); border-color:transparent;}
+  .via-bar>i,.rep-bar.in span{background:var(--grad);}
+  .field input:focus,.field select:focus{outline:none; border-color:var(--teal); box-shadow:0 0 0 3px rgba(46,230,197,.25);}
+  .bottom-nav button.active{color:var(--ac);} 
+  .bottom-nav button.active .ic{filter:drop-shadow(0 0 6px rgba(46,230,197,.7));}
+  .login-gate{background:var(--navy);} .login-box{border-radius:22px; border-top:4px solid var(--teal); box-shadow:0 24px 60px -20px rgba(0,0,0,.55);}
+  .login-box h2{color:var(--ac2); font-weight:700;}
+  .sheet{border-top:4px solid var(--teal);} .sheet h3{color:var(--ac2); font-weight:700;}
+  .seg button.active{border-color:var(--ac);}
+  @media (min-width:900px){
+    .bottom-nav{background:linear-gradient(180deg,#0B1A33 0%,#14315C 100%); border-right:1px solid rgba(46,230,197,.28);}
+    .bottom-nav button{color:#B7C6E0;} .bottom-nav button:hover{background:rgba(74,168,255,.14);}
+    .bottom-nav button.active{background:linear-gradient(90deg,rgba(46,230,197,.24),rgba(74,168,255,.10)); color:#fff; box-shadow:inset 3px 0 0 var(--teal);}
+  }
+  /* no computador o nome do app fica no topo da barra lateral, como no Livro Caixa */
+  @media (min-width:900px){
+    body{padding-top:22px;}
+    header.top{position:fixed; top:0; left:0; width:230px; max-width:none!important; margin:0; padding:22px 18px 16px; z-index:50; background:transparent; box-shadow:none; border-bottom:1px solid rgba(46,230,197,.28);}
+    header.top .header-row{gap:10px; align-items:center;}
+    header.top .panda{font-size:30px;}
+    header.top .eyebrow{font-size:13px; letter-spacing:.02em;}
+    header.top h1{font-size:20px; line-height:1.1; margin:0 0 2px;}
+    header.top .header-row > div{display:flex; flex-direction:column;}
+    .sair-btn{position:fixed; left:14px; bottom:16px; width:202px; margin:0!important; padding:10px 12px!important; z-index:50; text-align:center;}
+    .sair-btn:hover{background:rgba(74,168,255,.2)!important;}
+  }
+  @media (min-width:1500px){ header.top{width:250px;} .sair-btn{width:222px;} }
 </style>
 </head>
 <body>
@@ -445,7 +492,7 @@
 <div id="loginGate" class="login-gate">
   <div class="login-box">
     <div class="panda">🐼</div>
-    <h2>Finanças Jean e Elia</h2>
+    <h2>Finanças<br><span style="font-size:15px;font-weight:600;color:var(--ink-soft)">Elia &amp; Jean</span></h2>
     <div class="field"><label>E-mail</label><input id="loginEmail" type="email" placeholder="seu@email.com"></div>
     <div class="field"><label>Senha</label><div style="position:relative"><input id="loginSenha" type="password" placeholder="senha" style="padding-right:56px"><button type="button" id="loginOlho" aria-label="Mostrar senha" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:transparent;font-size:22px;padding:6px;cursor:pointer">👁️</button></div></div>
     <div id="loginErro" class="login-erro"></div>
@@ -457,8 +504,8 @@
   <div class="header-row">
     <span class="panda">🐼</span>
     <div>
-      <div class="eyebrow">Painel financeiro</div>
-      <h1>Finanças Jean e Elia</h1>
+      <h1>Finanças</h1>
+      <div class="eyebrow">Elia &amp; Jean</div>
     </div>
     <button class="sair-btn" id="btnSair" onclick="sairLogin()" hidden>Sair</button>
   </div>
@@ -1428,13 +1475,13 @@ function renderRelatorios(){
   document.getElementById('repCaixa').innerHTML =
     linhaRep('Entradas', '+ '+formatarMoeda(totEnt), 'var(--green)') + linhaRep('Despesas', '− '+formatarMoeda(totSai), 'var(--brick)') +
     linhaRep('Aplicações financeiras', '− '+formatarMoeda(aplMes), 'var(--brick)') + linhaRep('Resgates', '+ '+formatarMoeda(resMes), 'var(--green)') +
-    '<div style="border-top:1px solid #F1EEE3;margin-top:6px"></div>' + linhaRep('Saldo comum (sobrou no caixa)', formatarMoeda(sobra), sobra>=0?'var(--green)':'var(--brick)', true) +
+    '<div style="border-top:1px solid #EEF1F6;margin-top:6px"></div>' + linhaRep('Saldo comum (sobrou no caixa)', formatarMoeda(sobra), sobra>=0?'var(--green)':'var(--brick)', true) +
     '<div style="font-size:11px;color:var(--ink-soft);margin-top:6px">Saldo comum = entradas − despesas − aplicações + resgates.</div>';
   const invs = carregarContasInvest(), totalAplicado = Math.round(trfs.reduce((s,t)=>s+(t.kind==='aplicacao'?1:-1)*(Number(t.valor)||0),0)*100)/100, saldoInv = invs.reduce((s,c)=>s+saldoAtualConta(c),0);
   document.getElementById('repAplic').innerHTML =
     linhaRep('Aplicado neste mês', formatarMoeda(aplMes)) + linhaRep('Resgatado neste mês', formatarMoeda(resMes)) +
     linhaRep('Líquido do mês (aplicado − resgatado)', formatarMoeda(aplMes-resMes), null, true) +
-    '<div style="border-top:1px solid #F1EEE3;margin:6px 0"></div>' +
+    '<div style="border-top:1px solid #EEF1F6;margin:6px 0"></div>' +
     linhaRep('Total aplicado até hoje (aplicações − resgates)', formatarMoeda(totalAplicado)) + linhaRep('Saldo atual nas contas de investimento', formatarMoeda(saldoInv), 'var(--green)', true) +
     (invs.length ? '<div style="margin-top:8px">'+invs.map(c=>linhaRep(esc(c.nome), formatarMoeda(saldoAtualConta(c)))).join('')+'</div>' : '');
 
@@ -2201,12 +2248,12 @@ function renderOfx(){
       <button class="cancel-link" onclick="fecharOfx()">Fechar</button>`;
     return;
   }
-  const cats = carregarCategorias(); const sel = (tipo,i,atual)=>`<select onchange="ofxItens[${i}].cat=this.value" style="width:100%;font-size:12px;padding:6px;border-radius:8px;border:1px solid var(--paper-line);background:#FCFAF4">${(tipo==='entrada'?cats.entrada:cats.saida).map(c=>`<option ${c.nome===atual?'selected':''} value="${esc(c.nome)}">${esc(c.nome)}</option>`).join('')}</select>`;
+  const cats = carregarCategorias(); const sel = (tipo,i,atual)=>`<select onchange="ofxItens[${i}].cat=this.value" style="width:100%;font-size:12px;padding:6px;border-radius:8px;border:1px solid var(--paper-line);background:#F5F7FA">${(tipo==='entrada'?cats.entrada:cats.saida).map(c=>`<option ${c.nome===atual?'selected':''} value="${esc(c.nome)}">${esc(c.nome)}</option>`).join('')}</select>`;
   const marcados = ofxItens.filter(x=>x.marcado).length;
   const novos = ofxItens.filter(x=>!x.jaImportado).length, dups = ofxItens.length-novos;
   box.innerHTML = `<h3 style="margin-bottom:4px">📥 Conferir antes de importar — ${esc(conta.nome)}</h3>
     <div style="font-size:12px;color:var(--ink-soft);margin:4px 0 8px">${ofxItens.length} movimento(s) no arquivo · ${novos} novo(s)${dups?` · ${dups} já importado(s)`:''}${ofxInfo&&ofxInfo.saldoBanco?` · saldo informado pelo banco: <b>${formatarMoeda(ofxInfo.saldoBanco.valor)}</b> em ${viaData(ofxInfo.saldoBanco.data.slice(0,4)+'-'+ofxInfo.saldoBanco.data.slice(4,6)+'-'+ofxInfo.saldoBanco.data.slice(6,8))}`:''}</div>
-    <div style="max-height:46vh;overflow-y:auto;border-top:1px solid #F1EEE3">
+    <div style="max-height:46vh;overflow-y:auto;border-top:1px solid #EEF1F6">
     ${ofxItens.map((x,i)=>`<div class="via-rot" style="align-items:flex-start;opacity:${x.jaImportado?.5:1}">
         <input type="checkbox" ${x.marcado?'checked':''} ${x.jaImportado?'disabled':''} onchange="ofxItens[${i}].marcado=this.checked;ofxAtualizarTotal()" style="margin-top:4px;width:20px;height:20px;flex-shrink:0">
         <div style="flex:1;min-width:0"><div style="font-size:11px;color:var(--ink-soft)">${esc(viaData(x.data))}${x.jaImportado?' · <b>já importado</b>':x.parecido?' · <b style="color:var(--gold)">parece já lançado à mão</b>':''}</div>
