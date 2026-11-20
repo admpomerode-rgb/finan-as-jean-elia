@@ -880,7 +880,7 @@ try{
   dbLivroCaixa = dbPessoal;
   try{ dbPessoal.settings({ experimentalAutoDetectLongPolling:true }); }catch(e){}
   authPessoal = firebase.auth();
-  try{ authPessoal.setPersistence('session'); }catch(e){} // fechar o navegador encerra o login
+  try{ authPessoal.setPersistence('local'); }catch(e){} // o login fica salvo; quem encerra é o limite de horas sem uso (abaixo)
   configuradoPessoal = true; configuradoLivroCaixa = true;
 }catch(e){ console.warn("Firebase não iniciou:", e); }
 
@@ -2442,6 +2442,7 @@ function entrarLogin(){
   const email = document.getElementById('loginEmail').value.trim();
   const senha = document.getElementById('loginSenha').value;
   if(!email || !senha){ erro.textContent = 'Informe e-mail e senha.'; return; }
+  try{ localStorage.setItem('fin_ultimo_uso', String(Date.now())); }catch(e){}   // entrou agora: zera a contagem
   authPessoal.signInWithEmailAndPassword(email, senha)
     .then(() => { tentativasLogin = 0; erro.textContent = ''; document.getElementById('loginSenha').value = ''; })
     .catch(() => {
@@ -2451,16 +2452,22 @@ function entrarLogin(){
     });
 }
 function sairLogin(){ if(authPessoal) authPessoal.signOut(); }
+const LIMITE_SEM_USO_MS = 8 * 60 * 60 * 1000; // 8 horas sem usar → pede a senha de novo (mude aqui se quiser mais/menos)
+let _ultMarca = 0;
+function marcarUso(){ const n=Date.now(); if(n-_ultMarca<30000) return; _ultMarca=n; try{ localStorage.setItem('fin_ultimo_uso', String(n)); }catch(e){} }
+function passouDoLimite(){ try{ const t=Number(localStorage.getItem('fin_ultimo_uso')||0); return t>0 && (Date.now()-t)>LIMITE_SEM_USO_MS; }catch(e){ return false; } }
 function reiniciarTimerInatividade(){
   clearTimeout(timerInatividade);
   if(!authPessoal || !authPessoal.currentUser) return;
-  timerInatividade = setTimeout(sairLogin, 10 * 60 * 1000); // 10 min sem usar → sai
+  marcarUso();
+  timerInatividade = setTimeout(sairLogin, LIMITE_SEM_USO_MS); // passou o limite sem usar → sai
 }
 ['click','keydown','touchstart'].forEach(ev => document.addEventListener(ev, reiniciarTimerInatividade, {passive:true}));
 
 if(configuradoPessoal){
   document.body.classList.add('locked');
   authPessoal.onAuthStateChanged(u => {
+    if(u && passouDoLimite()){ sairLogin(); return; }   // ficou tempo demais sem abrir: pede a senha
     if(u){
       document.body.classList.remove('locked');
       document.getElementById('btnSair').hidden = false;
