@@ -1616,8 +1616,8 @@ async function prolaboreSincronizar(snap){
 
 
 /* ---------- Gastos próprios (Livro Caixa) ----------
-   Toda despesa PAGA da categoria "Gastos próprios" no Livro Caixa (marcada lá com gastoProprio=true) vira aqui uma DESPESA,
-   com a mesma descrição, o mesmo local (fornecedor) e a mesma categoria (se existir aqui; senão "Outros"). Uma vez só cada.
+   Toda despesa PAGA da categoria "Gastos próprios" no Livro Caixa (marcada lá com gastoProprio=true) vira aqui uma RECEITA + uma DESPESA,
+   com a mesma descrição, o mesmo local (fornecedor), o nº da nota e a mesma categoria (se existir aqui; senão "Outros"). Uma vez só cada.
    Só LÊ o Livro Caixa. O que já veio fica em "gastosPropriosImportados" (se apagar daqui, não volta sozinho). */
 let gpSincronizando = false, gpTentou = false;
 async function gastosPropriosBuscar(manual){
@@ -1633,6 +1633,7 @@ async function gastosPropriosBuscar(manual){
     const feitos = Store.get('gastosPropriosImportados', {}) || {};
     const jaPL = Store.get('prolaboreImportados', {}) || {};
     const cats = carregarCategorias();
+    const catEntrada = (cats.entrada.find(c=>/pr[oó].?labore/i.test(c.nome)) || cats.entrada[0] || {}).nome || 'Outros';
     const novos = [];
     snap.forEach(doc=>{
       const d = doc.data(); if(feitos[doc.id] || jaPL[doc.id] || d.proLabore) return;      // já veio, ou é Pró-labore (outro fluxo)
@@ -1649,7 +1650,13 @@ async function gastosPropriosBuscar(manual){
       const desc = String(n.d.descricao||'Gasto próprio').trim(), local = String(n.d.fornecedor||'').trim();
       const nomeCat = String(n.d.categoria||'').split('/')[0].trim();
       const catSaida = (cats.saida.find(c=>c.nome.toLowerCase()===nomeCat.toLowerCase()) || cats.saida.find(c=>c.nome==='Outros') || cats.saida[0] || {}).nome || 'Outros';
-      lista.push({ descricao:(local ? desc+' · '+local : desc).slice(0,120), valor:n.valor, categoria:catSaida, subcategoria:null, contaId:null, data:n.iso, tipo:'saida', criadoEm:t++, origemLC:n.id, localLC:local, categoriaLC:String(n.d.categoria||''), gastoProprioLC:true });
+      // número da nota: campo da nota ou, se vier só na descrição ("NF 123 — ..."), tirado de lá
+      let nf = String(n.d.numeroNF||n.d.numeroNota||'').trim();
+      if(!nf){ const m = desc.match(/\bNF[\s.:\-nº°]*([0-9][0-9A-Za-z.\-\/]*)/i); if(m) nf = m[1]; }
+      const jaTemNF = nf && new RegExp('\\bNF[\\s.:\\-nº°]*'+nf.replace(/[.*+?^${}()|[\]\\\/]/g,'\\$&'),'i').test(desc);
+      const sufixo = (local ? ' · '+local : '') + (nf && !jaTemNF ? ' · NF '+nf : '');
+      lista.push({ descricao:('Gastos próprios — '+desc+sufixo).slice(0,140), valor:n.valor, categoria:catEntrada, subcategoria:null, contaId:null, data:n.iso, tipo:'entrada', criadoEm:t++, origemLC:n.id, localLC:local, nfLC:nf, gastoProprioLC:true });
+      lista.push({ descricao:(desc+sufixo).slice(0,140), valor:n.valor, categoria:catSaida, subcategoria:null, contaId:null, data:n.iso, tipo:'saida', criadoEm:t++, origemLC:n.id, localLC:local, nfLC:nf, categoriaLC:String(n.d.categoria||''), gastoProprioLC:true });
       feitos[n.id] = true;
     });
     Object.keys(porMes).forEach(k=>Store.set(k, JSON.stringify(porMes[k])));
@@ -1657,7 +1664,7 @@ async function gastosPropriosBuscar(manual){
     renderTudo();
     const soma = novos.reduce((s,n)=>s+n.valor,0);
     if(st) st.textContent = 'Trouxe '+novos.length+' gasto(s) próprio(s).';
-    await alertaGrande('Trouxe do Livro Caixa '+novos.length+' gasto(s) próprio(s), total '+formatarMoeda(soma)+'. Cada um entrou aqui como despesa, com o mesmo local e a mesma descrição.','ok');
+    await alertaGrande('Trouxe do Livro Caixa '+novos.length+' gasto(s) próprio(s), total '+formatarMoeda(soma)+'. Cada um entrou aqui como receita e, logo em seguida, como despesa, com o local e o número da nota na descrição.','ok');
   } catch(e){
     console.error(e); if(st) st.textContent = '';
     if(manual) alertaGrande('Não consegui buscar no Livro Caixa. Verifique a internet e tente de novo.','erro');
