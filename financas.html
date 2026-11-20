@@ -678,6 +678,9 @@
   <button id="navCadastros" class="mais-item" onclick="mudarView('cadastros')">
     <span class="ic">🗃️</span>Cadastros
   </button>
+  <button id="navBackup" class="mais-item" onclick="abrirBackup()">
+    <span class="ic">💾</span>Backup
+  </button>
   <button id="navMais" onclick="abrirMais()">
     <span class="ic">☰</span>Mais
   </button>
@@ -786,6 +789,7 @@
     <button class="via-btn" style="width:100%;padding:16px;font-size:15px;margin-bottom:8px;text-align:left" onclick="irMais('categorias')">🗂️ Categorias</button>
     <button class="via-btn" style="width:100%;padding:16px;font-size:15px;margin-bottom:8px;text-align:left" onclick="irMais('viagens')">🧳 Viagens</button>
     <button class="via-btn" style="width:100%;padding:16px;font-size:15px;margin-bottom:8px;text-align:left" onclick="irMais('cadastros')">🗃️ Cadastros (contas, cartões e investimentos)</button>
+    <button class="via-btn" style="width:100%;padding:16px;font-size:15px;margin-bottom:8px;text-align:left" onclick="fecharMais();abrirBackup()">💾 Backup (cópia de segurança)</button>
     <button class="cancel-link" onclick="fecharMais()">Fechar</button>
   </div>
 </div>
@@ -851,6 +855,8 @@ const Store = {
 function lerLS(chave, padrao){ return Store.get(chave, padrao); }
 function renderTudo(){
   render();
+  try{ if(document.getElementById('sheetBg').classList.contains('open') && !editandoLancamento) popularSelectCategoria(); }catch(e){}
+  checarBackup();
   const v=document.querySelector('.view.active'); if(!v) return;
   if(v.id==='viewCategorias') renderCategorias();
   if(v.id==='viewRelatorios') renderRelatorios();
@@ -1294,15 +1300,26 @@ const CATEGORIAS_PADRAO = {
 
 function carregarCategorias(){
   let cats = lerLS('categorias', null);
+  let mudou = false;
   if(!cats || !Array.isArray(cats.entrada) || !Array.isArray(cats.saida)){
-    cats = JSON.parse(JSON.stringify(CATEGORIAS_PADRAO));
+    cats = JSON.parse(JSON.stringify(CATEGORIAS_PADRAO)); mudou = true;
   }
   // migração: formatos antigos guardavam só strings, sem subcategorias
   ['entrada','saida'].forEach(tipo => {
-    cats[tipo] = (cats[tipo] || []).map(c => typeof c === 'string' ? { nome: c, subs: [] } : c);
+    cats[tipo] = (cats[tipo] || []).map(c => { if(typeof c === 'string'){ mudou = true; return { nome: c, subs: [] }; } if(!Array.isArray(c.subs)){ c.subs = []; mudou = true; } return c; });
+    if(!cats[tipo].length){ cats[tipo] = JSON.parse(JSON.stringify(CATEGORIAS_PADRAO[tipo])); mudou = true; }
   });
-  salvarCategorias(cats);
+  if(mudou && Store.pronto && authPessoal && authPessoal.currentUser) salvarCategorias(cats);   // só grava quando algo mudou de verdade
   return cats;
+}
+// categorias que já aparecem em lançamentos antigos mas sumiram da lista: entram na lista de escolha
+function categoriasUsadas(tipo){
+  const nomes = new Set();
+  Object.keys(Store.cache || {}).forEach(k => {
+    if(!/^lancamentos_/.test(k)) return;
+    (Store.cache[k] || []).forEach(l => { if(l && l.tipo === tipo && l.categoria) nomes.add(String(l.categoria)); });
+  });
+  return [...nomes];
 }
 
 function salvarCategorias(cats){
@@ -1392,8 +1409,12 @@ function renderCategorias(){
 function popularSelectCategoria(){
   const cats = carregarCategorias();
   const sel = document.getElementById('fCategoria');
+  const antes = sel.value;
   const lista = tipoAtual === 'entrada' ? cats.entrada : cats.saida;
-  sel.innerHTML = lista.map(c => `<option>${esc(c.nome)}</option>`).join('');
+  const nomes = lista.map(c => c.nome);
+  categoriasUsadas(tipoAtual).forEach(n => { if(!nomes.includes(n)) nomes.push(n); });
+  sel.innerHTML = nomes.map(n => `<option>${esc(n)}</option>`).join('');
+  if(antes && nomes.includes(antes)) sel.value = antes;
   popularSelectSubcategoria();
 }
 
@@ -2451,6 +2472,69 @@ function entrarLogin(){
       erro.textContent = 'E-mail ou senha incorretos.';
     });
 }
+
+/* =========================================================
+   BACKUP — cópia de todos os dados em um arquivo no aparelho.
+   Regra: precisa de 1 backup por semana. Toda SEXTA-FEIRA o app exige o backup;
+   se passar a sexta sem fazer, o app continua trancado até fazer (domingo, segunda... tanto faz).
+   A data do último backup fica salva na nuvem (vale para os dois celulares).
+   ========================================================= */
+function sextaDeReferencia(){            // a sexta-feira mais recente (hoje, se for sexta), à meia-noite
+  const d = new Date(); d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - ((d.getDay() - 5 + 7) % 7));
+  return d.getTime();
+}
+function infoBackup(){ return Store.get('backup_info', null); }
+function precisaBackup(){
+  const i = infoBackup();
+  return !i || !i.ultimo || Number(i.ultimo) < sextaDeReferencia();
+}
+function dataBR(ms){ return new Date(ms).toLocaleDateString('pt-BR') + ' às ' + new Date(ms).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function baixarBackup(){
+  const dados = JSON.parse(JSON.stringify(Store.cache || {}));
+  delete dados.backup_info;
+  const arq = { app:'financas-jean-elia', versao:1, criadoEm:new Date().toISOString(), dados };
+  const blob = new Blob([JSON.stringify(arq)], {type:'application/json'});
+  const hoje = new Date(); const pad = n => String(n).padStart(2,'0');
+  const nome = `backup-financas-${hoje.getFullYear()}-${pad(hoje.getMonth()+1)}-${pad(hoje.getDate())}.json`;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  return nome;
+}
+function marcarBackupFeito(){
+  const email = (authPessoal && authPessoal.currentUser && authPessoal.currentUser.email) || '';
+  Store.set('backup_info', JSON.stringify({ ultimo: Date.now(), por: email }));
+}
+function fecharTravaBackup(){ const t=document.getElementById('travaBackup'); if(t) t.remove(); }
+function telaBackup(trava){
+  fecharTravaBackup();
+  const i = infoBackup();
+  const bg = document.createElement('div'); bg.id='travaBackup'; bg.className='alerta-bg'; bg.style.zIndex = trava ? '900' : '300';
+  bg.innerHTML = `<div class="alerta-box"><div class="ico">💾</div>
+    <h3>${trava ? 'Faça o backup da semana' : 'Backup (cópia de segurança)'}</h3>
+    <p id="bkTexto">${trava ? 'Para continuar usando o app, salve a cópia de segurança desta semana. Leva 5 segundos.' : 'Salva uma cópia de todos os seus dados em um arquivo no aparelho.'}\n\nÚltimo backup: ${i && i.ultimo ? dataBR(Number(i.ultimo)) : 'nunca foi feito'}.</p>
+    <div class="bts"><button class="save-btn" id="bkBaixar">⬇️ Baixar o backup agora</button></div></div>`;
+  document.body.appendChild(bg);
+  const bts = bg.querySelector('.bts');
+  bg.querySelector('#bkBaixar').onclick = () => {
+    if(!Store.pronto){ alertaGrande('Os dados ainda estão carregando. Espere uns segundos e tente de novo.','aviso'); return; }
+    const nome = baixarBackup();
+    bg.querySelector('#bkTexto').textContent = 'O arquivo "' + nome + '" foi baixado (veja na pasta Downloads do aparelho).\n\nConferiu que ele apareceu? Então toque no botão abaixo.';
+    bts.innerHTML = '<button class="save-btn" id="bkOk">✅ Baixei, pode continuar</button><button class="cancel-link" id="bkDeNovo">Baixar de novo</button>' + (trava ? '' : '<button class="cancel-link" id="bkFechar">Fechar</button>');
+    bts.querySelector('#bkOk').onclick = () => { marcarBackupFeito(); fecharTravaBackup(); alertaGrande('Backup registrado. Próximo: na sexta-feira.','ok'); };
+    bts.querySelector('#bkDeNovo').onclick = () => { baixarBackup(); };
+    const f = bts.querySelector('#bkFechar'); if(f) f.onclick = fecharTravaBackup;
+  };
+  if(!trava){ const f=document.createElement('button'); f.className='cancel-link'; f.textContent='Fechar'; f.onclick=fecharTravaBackup; bts.appendChild(f); }
+}
+function abrirBackup(){ telaBackup(false); }
+function checarBackup(){
+  if(!Store.pronto || !authPessoal || !authPessoal.currentUser) return;
+  const t = document.getElementById('travaBackup');
+  if(precisaBackup()){ if(!t || t.dataset.trava!=='1'){ telaBackup(true); const n=document.getElementById('travaBackup'); if(n) n.dataset.trava='1'; } }
+}
+
 function sairLogin(){ if(authPessoal) authPessoal.signOut(); }
 const LIMITE_SEM_USO_MS = 8 * 60 * 60 * 1000; // 8 horas sem usar → pede a senha de novo (mude aqui se quiser mais/menos)
 let _ultMarca = 0;
