@@ -1664,7 +1664,7 @@ async function gastosPropriosBuscar(manual){
       if(!nf){ const m = desc.match(/\bNF[\s.:\-nº°]*([0-9][0-9A-Za-z.\-\/]*)/i); if(m) nf = m[1]; }
       const jaTemNF = nf && new RegExp('\\bNF[\\s.:\\-nº°]*'+nf.replace(/[.*+?^${}()|[\]\\\/]/g,'\\$&'),'i').test(desc);
       const sufixo = (local ? ' · '+local : '') + (nf && !jaTemNF ? ' · NF '+nf : '');
-      lista.push({ descricao:('Gastos próprios — '+desc+sufixo).slice(0,140), valor:n.valor, categoria:catEntrada, subcategoria:null, contaId:null, data:n.iso, tipo:'entrada', criadoEm:t++, origemLC:n.id, localLC:local, nfLC:nf, gastoProprioLC:true });
+      lista.push({ descricao:('Pró-labore — '+desc+sufixo).slice(0,140), valor:n.valor, categoria:catEntrada, subcategoria:null, contaId:null, data:n.iso, tipo:'entrada', criadoEm:t++, origemLC:n.id, localLC:local, nfLC:nf, gastoProprioLC:true });
       lista.push({ descricao:(desc+sufixo).slice(0,140), valor:n.valor, categoria:catSaida, subcategoria:null, contaId:null, data:n.iso, tipo:'saida', criadoEm:t++, origemLC:n.id, localLC:local, nfLC:nf, categoriaLC:String(n.d.categoria||''), gastoProprioLC:true });
       feitos[n.id] = true;
     });
@@ -1673,7 +1673,7 @@ async function gastosPropriosBuscar(manual){
     renderTudo();
     const soma = novos.reduce((s,n)=>s+n.valor,0);
     if(st) st.textContent = 'Trouxe '+novos.length+' gasto(s) próprio(s).';
-    await alertaGrande('Trouxe do Livro Caixa '+novos.length+' gasto(s) próprio(s), total '+formatarMoeda(soma)+'. Cada um entrou aqui como receita e, logo em seguida, como despesa, com o local e o número da nota na descrição.','ok');
+    await alertaGrande('Trouxe do Livro Caixa '+novos.length+' gasto(s) próprio(s), total '+formatarMoeda(soma)+'. Cada um entrou aqui como Pró-labore: uma receita e, logo em seguida, a despesa, com o local e o número da nota na descrição.','ok');
   } catch(e){
     console.error(e); if(st) st.textContent = '';
     if(manual) alertaGrande('Não consegui buscar no Livro Caixa. Verifique a internet e tente de novo.','erro');
@@ -1696,13 +1696,17 @@ function renderProlabore(){
   const minha = ++prolaboreReq;
 
   // só LEITURA: lançamentos que o Livro Caixa marcou como Pró-Labore
-  dbLivroCaixa.collection('livro-caixa-lancamentos').where('proLabore','==',true).get()
-    .then(snap => {
+  const colLC = dbLivroCaixa.collection('livro-caixa-lancamentos');
+  Promise.all([ colLC.where('proLabore','==',true).get(), colLC.where('gastoProprio','==',true).get().catch(()=>null) ])
+    .then(([snap, snapGP]) => {
       prolaboreSincronizar(snap);          // despesas de Pró-labore PAGAS no Livro Caixa viram receita + despesa aqui (uma vez só cada)
       if(minha !== prolaboreReq) return;   // o usuário já trocou de mês
       let total = 0, qtd = 0, pendentes = 0;
-      snap.forEach(doc => {
-        const d = doc.data();
+      // Gastos próprios contam como Pró-labore (sem repetir quem já é Pró-labore); em nota com vários itens, só o valor dos itens
+      const lista = []; const vistos = {};
+      snap.forEach(doc => { vistos[doc.id] = true; lista.push(doc.data()); });
+      if(snapGP) snapGP.forEach(doc => { if(vistos[doc.id]) return; const d = doc.data(); lista.push(Number(d.gastoProprioValor)>0 ? Object.assign({}, d, { valor:d.gastoProprioValor }) : d); });
+      lista.forEach(d => {
         if(d.status === 'cancelado') return;
         const iso = String(d.dataPagamento || d.dataVencimento || d.data || '');
         const p = iso.split('-');
