@@ -532,7 +532,7 @@
     </div>
 
     <div class="card prolabore">
-      <h2>💰 Pró-labore (Livro Caixa)</h2>
+      <h2>💰 Nossa Empresa (Livro Caixa)</h2>
       <div class="row">
         <div>
           <div class="amount" id="prolaboreValor">—</div>
@@ -541,6 +541,7 @@
       </div>
       <button class="cancel-link" style="margin-top:10px;width:100%;text-align:center;border:1px solid var(--line);border-radius:10px;padding:10px" onclick="gastosPropriosBuscar(true)">🔄 Buscar "Gastos próprios" do Livro Caixa</button>
       <div class="status" id="gpStatus" style="margin-top:6px"></div>
+      <button class="cancel-link" style="margin-top:10px;width:100%;text-align:center;border:1px solid var(--line);border-radius:10px;padding:10px" onclick="abrirRepasse()">🏢 Repasse para a empresa (aporte de sócio)</button>
     </div>
 
     <div class="card">
@@ -703,9 +704,17 @@
       <label>Valor (R$)</label>
       <input id="fValor" type="text" inputmode="decimal" placeholder="0,00">
     </div>
+    <div class="field" id="fQuemRow" style="display:none">
+      <label>De quem é esta receita?</label>
+      <div class="seg" id="fQuemBtns" style="margin-bottom:0">
+        <button type="button" data-q="Elia" onclick="escolherQuem('Elia')">Elia</button>
+        <button type="button" data-q="Jean" onclick="escolherQuem('Jean')">Jean</button>
+        <button type="button" data-q="Nossa Empresa" onclick="escolherQuem('Nossa Empresa')">Nossa Empresa</button>
+      </div>
+    </div>
     <div class="field">
       <label>Categoria</label>
-      <select id="fCategoria" onchange="popularSelectSubcategoria()"></select>
+      <select id="fCategoria" onchange="popularSelectSubcategoria();atualizarQuemBtns()"></select>
     </div>
     <div class="field">
       <label>Subcategoria</label>
@@ -721,6 +730,39 @@
     </div>
     <button class="save-btn" onclick="salvarLancamento()">Salvar lançamento</button>
     <button class="cancel-link" onclick="fecharSheet()">Cancelar</button>
+  </div>
+</div>
+
+<div class="sheet-bg" id="sheetBgRepasse" onclick="if(event.target===this) fecharRepasse()">
+  <div class="sheet">
+    <h3>Repasse para a empresa</h3>
+    <div class="status" style="margin-bottom:12px">O dinheiro sai daqui (despesa) e o Livro Caixa recebe um aviso para lançar como <b>aporte de sócio</b>.</div>
+    <div class="field">
+      <label>Quem está repassando?</label>
+      <div class="seg" id="rpQuemBtns" style="margin-bottom:0">
+        <button type="button" data-q="Elia" onclick="rpEscolher('Elia')">Elia</button>
+        <button type="button" data-q="Jean" onclick="rpEscolher('Jean')">Jean</button>
+        <button type="button" data-q="Elia e Jean" onclick="rpEscolher('Elia e Jean')">Os dois</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Valor (R$)</label>
+      <input id="rpValor" type="text" inputmode="decimal" placeholder="0,00">
+    </div>
+    <div class="field">
+      <label>Conta de onde sai</label>
+      <select id="rpConta"></select>
+    </div>
+    <div class="field">
+      <label>Data</label>
+      <input id="rpData" type="date">
+    </div>
+    <div class="field">
+      <label>Observação (opcional)</label>
+      <input id="rpObs" type="text" placeholder="Ex: aplicação na empresa">
+    </div>
+    <button class="save-btn" onclick="salvarRepasse()">Repassar para a empresa</button>
+    <button class="cancel-link" onclick="fecharRepasse()">Cancelar</button>
   </div>
 </div>
 
@@ -1283,8 +1325,10 @@ function renderTransferencias(){
 
 const CATEGORIAS_PADRAO = {
   entrada: [
+    { nome: "Elia", subs: [] },
+    { nome: "Jean", subs: [] },
+    { nome: "Nossa Empresa", subs: [] },
     { nome: "Salário extra", subs: [] },
-    { nome: "Pró-labore", subs: [] },
     { nome: "Freelance", subs: [] },
     { nome: "Outros", subs: [] }
   ],
@@ -1311,6 +1355,28 @@ function carregarCategorias(){
     cats[tipo] = (cats[tipo] || []).map(c => { if(typeof c === 'string'){ mudou = true; return { nome: c, subs: [] }; } if(!Array.isArray(c.subs)){ c.subs = []; mudou = true; } return c; });
     if(!cats[tipo].length){ cats[tipo] = JSON.parse(JSON.stringify(CATEGORIAS_PADRAO[tipo])); mudou = true; }
   });
+  // "Pró-labore" virou "Nossa Empresa" e as receitas se separam em Elia / Jean / Nossa Empresa (uma vez só)
+  if(Store.pronto && authPessoal && authPessoal.currentUser && !Store.get('migNossaEmpresa', false)){
+    const ent = cats.entrada;
+    const antigo = ent.find(c => /^pr[oó].?labore$/i.test(c.nome));
+    if(antigo){ if(ent.some(c => c.nome === 'Nossa Empresa')) ent.splice(ent.indexOf(antigo), 1); else antigo.nome = 'Nossa Empresa'; }
+    ['Nossa Empresa','Jean','Elia'].forEach(n => { if(!ent.some(c => c.nome === n)) ent.unshift({ nome:n, subs:[] }); });
+    mudou = true;
+    Object.keys(Store.cache || {}).forEach(k => {
+      if(!/^lancamentos_/.test(k)) return;
+      let alterou = false;
+      const lista = (Store.cache[k] || []).map(l => {
+        if(l && l.tipo === 'entrada' && /^pr[oó].?labore$/i.test(String(l.categoria||''))){ alterou = true; l = Object.assign({}, l, { categoria:'Nossa Empresa', descricao:String(l.descricao||'').replace(/^Pr[oó].?labore\b/i,'Nossa Empresa') }); }
+        return l;
+      });
+      if(alterou) Store.set(k, JSON.stringify(lista));
+    });
+    Store.set('migNossaEmpresa', JSON.stringify(true));
+  }
+  if(Store.pronto && authPessoal && authPessoal.currentUser && !Store.get('migRepasse', false)){
+    if(!cats.saida.some(c => c.nome === 'Repasse para a empresa')) cats.saida.push({ nome:'Repasse para a empresa', subs:[] });
+    mudou = true; Store.set('migRepasse', JSON.stringify(true));
+  }
   if(mudou && Store.pronto && authPessoal && authPessoal.currentUser) salvarCategorias(cats);   // só grava quando algo mudou de verdade
   return cats;
 }
@@ -1417,7 +1483,19 @@ function popularSelectCategoria(){
   categoriasUsadas(tipoAtual).forEach(n => { if(!nomes.includes(n)) nomes.push(n); });
   sel.innerHTML = nomes.map(n => `<option>${esc(n)}</option>`).join('');
   if(antes && nomes.includes(antes)) sel.value = antes;
+  else if(tipoAtual === 'entrada' && !editandoLancamento && nomes.includes('Nossa Empresa')) sel.value = 'Nossa Empresa';
   popularSelectSubcategoria();
+}
+function escolherQuem(nome){
+  const sel = document.getElementById('fCategoria');
+  if(![...sel.options].some(o => o.value === nome)) return;
+  sel.value = nome; popularSelectSubcategoria(); atualizarQuemBtns();
+}
+function atualizarQuemBtns(){
+  const row = document.getElementById('fQuemRow'); if(!row) return;
+  row.style.display = tipoAtual === 'entrada' ? '' : 'none';
+  const v = document.getElementById('fCategoria').value;
+  row.querySelectorAll('button').forEach(b => { const on = b.dataset.q === v; b.classList.toggle('active', on); b.classList.toggle('in', on); });
 }
 
 function popularSelectSubcategoria(){
@@ -1428,6 +1506,7 @@ function popularSelectSubcategoria(){
   const cat = lista.find(c => c.nome === nomeCategoria);
   const subs = cat ? cat.subs : [];
   sel.innerHTML = '<option value="">Nenhuma</option>' + subs.map(s => `<option>${esc(s)}</option>`).join('');
+  atualizarQuemBtns();
 }
 
 /* ---------- navegação entre abas ---------- */
@@ -1585,7 +1664,7 @@ async function prolaboreSincronizar(snap){
   try{
     const feitos = Store.get('prolaboreImportados', {}) || {};
     const cats = carregarCategorias();
-    const catEntrada = (cats.entrada.find(c=>/pr[oó].?labore/i.test(c.nome)) || cats.entrada[0] || {}).nome || 'Outros';
+    const catEntrada = (cats.entrada.find(c=>c.nome==='Nossa Empresa') || cats.entrada.find(c=>/pr[oó].?labore/i.test(c.nome)) || cats.entrada[0] || {}).nome || 'Outros';
     const novos = []; 
     snap.forEach(doc=>{
       const d = doc.data(); if(feitos[doc.id]) return;
@@ -1602,14 +1681,14 @@ async function prolaboreSincronizar(snap){
       const desc = String(n.d.descricao||'Despesa').trim(), local = String(n.d.fornecedor||'').trim();
       const nomeCat = String(n.d.categoria||'').trim();
       const catSaida = (cats.saida.find(c=>c.nome.toLowerCase()===nomeCat.toLowerCase()) || cats.saida.find(c=>c.nome==='Outros') || cats.saida[0] || {}).nome || 'Outros';
-      lista.push({ descricao:'Pró-labore — '+desc, valor:n.valor, categoria:catEntrada, subcategoria:null, contaId:null, data:n.iso, tipo:'entrada', criadoEm:t++, origemLC:n.id });
+      lista.push({ descricao:'Nossa Empresa — '+desc, valor:n.valor, categoria:catEntrada, subcategoria:null, contaId:null, data:n.iso, tipo:'entrada', criadoEm:t++, origemLC:n.id });
       lista.push({ descricao:(local ? desc+' · '+local : desc).slice(0,120), valor:n.valor, categoria:catSaida, subcategoria:null, contaId:null, data:n.iso, tipo:'saida', criadoEm:t++, origemLC:n.id, localLC:local, categoriaLC:nomeCat });
       feitos[n.id] = true;
     });
     Object.keys(porMes).forEach(k=>Store.set(k, JSON.stringify(porMes[k])));
     Store.set('prolaboreImportados', JSON.stringify(feitos));
     renderTudo();
-    await alertaGrande('Trouxe do Livro Caixa '+novos.length+' despesa(s) de Pró-labore. Para cada uma, o app lançou uma receita de Pró-labore e, logo em seguida, a despesa no mesmo local.','ok');
+    await alertaGrande('Trouxe do Livro Caixa '+novos.length+' despesa(s) de Pró-labore. Para cada uma, o app lançou uma receita em Nossa Empresa e, logo em seguida, a despesa no mesmo local.','ok');
   } catch(e){ console.error(e); }
   finally { prolaboreSincronizando = false; }
 }
@@ -1633,7 +1712,7 @@ async function gastosPropriosBuscar(manual){
     const feitos = Store.get('gastosPropriosImportados', {}) || {};
     const jaPL = Store.get('prolaboreImportados', {}) || {};
     const cats = carregarCategorias();
-    const catEntrada = (cats.entrada.find(c=>/pr[oó].?labore/i.test(c.nome)) || cats.entrada[0] || {}).nome || 'Outros';
+    const catEntrada = (cats.entrada.find(c=>c.nome==='Nossa Empresa') || cats.entrada.find(c=>/pr[oó].?labore/i.test(c.nome)) || cats.entrada[0] || {}).nome || 'Outros';
     const novos = [];
     snap.forEach(doc=>{
       const d = doc.data(); if(feitos[doc.id] || jaPL[doc.id] || d.proLabore) return;      // já veio, ou é Pró-labore (outro fluxo)
@@ -1664,7 +1743,7 @@ async function gastosPropriosBuscar(manual){
       if(!nf){ const m = desc.match(/\bNF[\s.:\-nº°]*([0-9][0-9A-Za-z.\-\/]*)/i); if(m) nf = m[1]; }
       const jaTemNF = nf && new RegExp('\\bNF[\\s.:\\-nº°]*'+nf.replace(/[.*+?^${}()|[\]\\\/]/g,'\\$&'),'i').test(desc);
       const sufixo = (local ? ' · '+local : '') + (nf && !jaTemNF ? ' · NF '+nf : '');
-      lista.push({ descricao:('Pró-labore — '+desc+sufixo).slice(0,140), valor:n.valor, categoria:catEntrada, subcategoria:null, contaId:null, data:n.iso, tipo:'entrada', criadoEm:t++, origemLC:n.id, localLC:local, nfLC:nf, gastoProprioLC:true });
+      lista.push({ descricao:('Nossa Empresa — '+desc+sufixo).slice(0,140), valor:n.valor, categoria:catEntrada, subcategoria:null, contaId:null, data:n.iso, tipo:'entrada', criadoEm:t++, origemLC:n.id, localLC:local, nfLC:nf, gastoProprioLC:true });
       lista.push({ descricao:(desc+sufixo).slice(0,140), valor:n.valor, categoria:catSaida, subcategoria:null, contaId:null, data:n.iso, tipo:'saida', criadoEm:t++, origemLC:n.id, localLC:local, nfLC:nf, categoriaLC:String(n.d.categoria||''), gastoProprioLC:true });
       feitos[n.id] = true;
     });
@@ -1673,12 +1752,50 @@ async function gastosPropriosBuscar(manual){
     renderTudo();
     const soma = novos.reduce((s,n)=>s+n.valor,0);
     if(st) st.textContent = 'Trouxe '+novos.length+' gasto(s) próprio(s).';
-    await alertaGrande('Trouxe do Livro Caixa '+novos.length+' gasto(s) próprio(s), total '+formatarMoeda(soma)+'. Cada um entrou aqui como Pró-labore: uma receita e, logo em seguida, a despesa, com o local e o número da nota na descrição.','ok');
+    await alertaGrande('Trouxe do Livro Caixa '+novos.length+' gasto(s) próprio(s), total '+formatarMoeda(soma)+'. Cada um entrou aqui em Nossa Empresa: uma receita e, logo em seguida, a despesa, com o local e o número da nota na descrição.','ok');
   } catch(e){
     console.error(e); if(st) st.textContent = '';
     if(manual) alertaGrande('Não consegui buscar no Livro Caixa. Verifique a internet e tente de novo.','erro');
   }
   finally { gpSincronizando = false; }
+}
+
+/* ---------- Repasse para a empresa (aporte de sócio no Livro Caixa) ----------
+   1) grava um aviso PENDENTE na coleção "repasses-financas" (o Livro Caixa lê e você confirma lá, escolhendo a conta);
+   2) lança aqui a SAÍDA "Repasse para a empresa". Se o aviso não for gravado, nada é lançado aqui. */
+let rpQuem = '';
+function rpEscolher(q){ rpQuem = q; document.querySelectorAll('#rpQuemBtns button').forEach(b=>{ const on = b.dataset.q===q; b.classList.toggle('active',on); b.classList.toggle('in',on); }); }
+function abrirRepasse(){
+  rpEscolher('');
+  document.getElementById('rpValor').value = ''; document.getElementById('rpObs').value = '';
+  document.getElementById('rpData').value = hojeISO();
+  document.getElementById('rpConta').innerHTML = '<option value="">Dinheiro / sem conta</option>' + carregarContas().map(c => `<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('');
+  document.getElementById('sheetBgRepasse').classList.add('open');
+}
+function fecharRepasse(){ document.getElementById('sheetBgRepasse').classList.remove('open'); }
+let rpSalvando = false;
+async function salvarRepasse(){
+  if(rpSalvando) return;
+  const valor = parseFloat(document.getElementById('rpValor').value.replace(/\./g,'').replace(',', '.'));
+  const data = document.getElementById('rpData').value, contaId = document.getElementById('rpConta').value || null;
+  const obs = document.getElementById('rpObs').value.trim();
+  if(!rpQuem){ alertaGrande('Escolha quem está repassando: Elia, Jean ou os dois.','aviso'); return; }
+  if(!(valor > 0 && valor < 1e9) || !data){ alertaGrande('Preencha o valor e a data.','aviso'); return; }
+  if(!configuradoLivroCaixa || !authPessoal || !authPessoal.currentUser || !Store.pronto){ alertaGrande('Entre na conta e espere os dados carregarem para fazer o repasse.','aviso'); return; }
+  if(!(await confirmarGrande('Repassar '+formatarMoeda(valor)+' ('+rpQuem+') para a empresa? Sai daqui como despesa e o Livro Caixa recebe o aviso para lançar como aporte de sócio.','Sim, repassar'))) return;
+  rpSalvando = true;
+  const id = 'rp' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  try{
+    await dbLivroCaixa.collection('repasses-financas').doc(id).set({ valor: Math.round(valor*100)/100, data, de: rpQuem, descricao: obs, status:'pendente', origem:'financas', criadoEm: new Date().toISOString() });
+  } catch(e){
+    console.error(e); rpSalvando = false;
+    alertaGrande('Não consegui avisar o Livro Caixa (verifique a internet e as regras do Firestore). NADA foi lançado. Tente de novo.','erro'); return;
+  }
+  const k = chaveDeData(data); const lista = lerLS(k, []);
+  lista.push({ descricao:('Repasse para a empresa (aporte de sócio) — '+rpQuem+(obs?' · '+obs:'')).slice(0,140), valor: Math.round(valor*100)/100, categoria:'Repasse para a empresa', subcategoria:null, contaId, data, tipo:'saida', criadoEm: Date.now(), repasseId:id });
+  Store.set(k, JSON.stringify(lista));
+  rpSalvando = false; fecharRepasse(); render();
+  await alertaGrande('Repasse de '+formatarMoeda(valor)+' lançado aqui como despesa. O Livro Caixa vai mostrar um aviso para lançar como aporte de sócio (abra o Livro Caixa e vá em Capital e Investimentos → Aportes).','ok');
 }
 
 function renderProlabore(){
@@ -1721,7 +1838,7 @@ function renderProlabore(){
           : '<span class="dot ok"></span> recebido neste mês';
       } else {
         valEl.textContent = formatarMoeda(0);
-        statusEl.innerHTML = '<span class="dot off"></span> nenhum Pró-labore lançado neste mês';
+        statusEl.innerHTML = '<span class="dot off"></span> nada lançado neste mês para Nossa Empresa';
       }
     })
     .catch(err => {
