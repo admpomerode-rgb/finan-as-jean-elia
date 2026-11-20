@@ -381,6 +381,22 @@
     background:#F5F7FA; font-size:12px; font-weight:600; cursor:pointer; color:var(--ink);
   }
   .cartao-item .acoes .del{flex:0 0 auto; border:none; background:none; color:var(--ink-soft);}
+  .chip-fat{display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; margin-top:4px; background:#EEF1F6; color:var(--ink-soft);}
+  .chip-fat.st-paga{background:var(--green-soft); color:var(--green);}
+  .chip-fat.st-vencida{background:var(--brick-soft); color:var(--brick);}
+  .chip-fat.st-fechada,.chip-fat.st-parcial{background:#FFF3D6; color:#8a5a00;}
+  .cartao-item .acoes .pagar-fat{background:var(--green-soft); color:var(--green); border-color:var(--green); font-weight:700;}
+  .fat-sec{font-size:12px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin:14px 0 6px;}
+  .fat-row{border:1px solid var(--line); border-radius:12px; margin-bottom:8px; background:#fff;}
+  .fat-row summary{display:flex; gap:8px; align-items:center; padding:12px; cursor:pointer; list-style:none;}
+  .fat-row summary::-webkit-details-marker{display:none;}
+  .fat-mes{font-weight:700; flex:1;}
+  .fat-val{font-family:'Lora',serif; font-weight:700;}
+  .fat-det{padding:0 12px 12px;}
+  .fat-item{display:flex; gap:8px; align-items:center; justify-content:space-between; font-size:13px; padding:6px 0; border-top:1px solid var(--line);}
+  .fat-item small{color:var(--ink-soft);}
+  .fat-item .del{border:none; background:none; color:var(--ink-soft); font-size:15px; cursor:pointer;}
+  .fat-pago{color:var(--green); font-weight:600;}
   .alerta-bg{position:fixed; inset:0; background:rgba(30,42,47,.6); display:flex; align-items:center; justify-content:center; padding:20px; z-index:200;}
   .alerta-box{background:#fff; border-radius:20px; padding:22px; max-width:380px; width:100%; border-top:8px solid var(--gold); box-shadow:0 24px 60px -20px rgba(0,0,0,.5);}
   .alerta-box.erro{border-top-color:var(--brick);}
@@ -603,6 +619,7 @@
       <div id="cadCartoes"></div>
       <div class="field" style="margin-top:12px"><label>Nome do cartão</label><input type="text" id="novoCartaoNome" placeholder="Ex: Nubank Roxinho, Inter..."></div>
       <div class="field"><label>Limite (R$)</label><input type="text" id="novoCartaoLimite" inputmode="decimal" placeholder="0,00"></div>
+      <div class="field"><label>Dia de fechamento da fatura</label><input type="text" id="novoCartaoFech" inputmode="numeric" placeholder="Ex: 3"></div>
       <div class="field"><label>Dia de vencimento da fatura</label><input type="text" id="novoCartaoVenc" inputmode="numeric" placeholder="Ex: 10"></div>
       <button class="save-btn" onclick="adicionarCartao()">Adicionar cartão</button>
     </div>
@@ -789,6 +806,35 @@
     <button class="cancel-link" onclick="fecharSheetCompra()">Cancelar</button>
   </div>
 </div>
+
+<div class="sheet-bg" id="sheetBgFaturas" onclick="if(event.target===this) fecharFaturas()">
+  <div class="sheet" id="fatConteudo"></div>
+</div>
+
+<div class="sheet-bg" id="sheetBgPagarFat" onclick="if(event.target===this) fecharPagarFatura()">
+  <div class="sheet">
+    <h3 id="pfTitulo">Pagar fatura</h3>
+    <div class="status" id="pfInfo" style="margin-bottom:12px"></div>
+    <div class="field"><label>Valor pago (R$)</label><input id="pfValor" type="text" inputmode="decimal"></div>
+    <div class="field"><label>Conta de onde sai</label><select id="pfConta"></select></div>
+    <div class="field"><label>Data do pagamento</label><input id="pfData" type="date"></div>
+    <button class="save-btn" onclick="salvarPagamentoFatura()">Pagar fatura</button>
+    <button class="cancel-link" onclick="fecharPagarFatura()">Cancelar</button>
+  </div>
+</div>
+
+<div class="sheet-bg" id="sheetBgEditCartao" onclick="if(event.target===this) fecharEditarCartao()">
+  <div class="sheet">
+    <h3>Editar cartão</h3>
+    <div class="field"><label>Nome do cartão</label><input id="ecNome" type="text"></div>
+    <div class="field"><label>Limite (R$)</label><input id="ecLimite" type="text" inputmode="decimal" placeholder="0,00"></div>
+    <div class="field"><label>Dia de fechamento da fatura</label><input id="ecFech" type="text" inputmode="numeric" placeholder="Ex: 3"></div>
+    <div class="field"><label>Dia de vencimento da fatura</label><input id="ecVenc" type="text" inputmode="numeric" placeholder="Ex: 10"></div>
+    <button class="save-btn" onclick="salvarEditarCartao()">Salvar</button>
+    <button class="cancel-link" onclick="fecharEditarCartao()">Cancelar</button>
+  </div>
+</div>
+
 
 <div class="sheet-bg" id="sheetBgTransferencia" onclick="if(event.target===this) fecharSheetTransferencia()">
   <div class="sheet">
@@ -994,17 +1040,20 @@ function adicionarCartao(){
   const nomeEl = document.getElementById('novoCartaoNome');
   const limiteEl = document.getElementById('novoCartaoLimite');
   const vencEl = document.getElementById('novoCartaoVenc');
+  const fechEl = document.getElementById('novoCartaoFech');
   const nome = nomeEl.value.trim();
   const limiteStr = limiteEl.value.replace(/\./g,'').replace(',', '.');
   const limite = parseFloat(limiteStr) || 0;
   const vencimento = parseInt(vencEl.value) || null;
+  const fechamento = parseInt(fechEl.value) || null;
   if(!nome) return;
+  if((fechamento && (fechamento < 1 || fechamento > 31)) || (vencimento && (vencimento < 1 || vencimento > 31))){ alertaGrande('Os dias de fechamento e vencimento têm que ser de 1 a 31.', 'aviso'); return; }
 
   const cartoes = carregarCartoes();
-  cartoes.push({ id: 'cc' + Date.now(), nome, limite, vencimento });
+  cartoes.push({ id: 'cc' + Date.now(), nome, limite, vencimento, fechamento });
   salvarCartoesLS(cartoes);
 
-  nomeEl.value = ''; limiteEl.value = ''; vencEl.value = '';
+  nomeEl.value = ''; limiteEl.value = ''; vencEl.value = ''; fechEl.value = '';
   renderTudo();
 }
 
@@ -1012,6 +1061,7 @@ async function removerCartao(id){
   if(!(await confirmarGrande('Apagar este cartão e todas as compras dele?', 'Sim, apagar'))) return;
   salvarCartoesLS(carregarCartoes().filter(c => c.id !== id));
   salvarComprasCartao(carregarComprasCartao().filter(c => c.cartaoId !== id));
+  Store.set('pagamentosFatura', JSON.stringify(cartPagamentos().filter(p => p.cartaoId !== id)));
   renderTudo();
 }
 
@@ -1051,34 +1101,70 @@ function salvarCompraCartao(){
   renderCartoes();
 }
 
-// calcula o valor da parcela de uma compra que cai no mês de referência
-function parcelaNoMes(compra, ref){
-  const inicio = new Date(compra.dataCompra + 'T00:00:00');
-  const mesInicio = inicio.getFullYear()*12 + inicio.getMonth();
-  const mesRef = ref.getFullYear()*12 + ref.getMonth();
-  const idx = mesRef - mesInicio;
-  if(idx >= 0 && idx < compra.parcelas) return compra.valor / compra.parcelas;
-  return 0;
+/* ---------- faturas do cartão: fechamento, vencimento, faturas anteriores e pagamento ----------
+   Cada compra cai na fatura certa pelo dia de FECHAMENTO (compra até o dia de fechamento entra na fatura que fecha neste mês;
+   depois, na do mês seguinte). A fatura é identificada pelo mês em que VENCE. Parcelas vão uma por fatura.
+   Pagar a fatura lança uma SAÍDA "Cartão de crédito" na conta escolhida (as compras em si não entram nas despesas do mês). */
+const CART_MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function cartIdxData(iso){ const p = String(iso).split('-').map(Number); return p[0]*12 + (p[1]-1); }
+function cartLabel(idx){ return CART_MESES[idx%12] + '/' + Math.floor(idx/12); }
+function cartUltDia(idx){ return new Date(Math.floor(idx/12), idx%12 + 1, 0).getDate(); }
+function cartDataISO(idx, dia){ return Math.floor(idx/12) + '-' + String(idx%12 + 1).padStart(2,'0') + '-' + String(Math.min(dia, cartUltDia(idx))).padStart(2,'0'); }
+function cartBR(iso){ if(!iso) return '—'; const p = iso.split('-'); return p[2] + '/' + p[1]; }
+function cartVencISO(c, idx){ return c.vencimento ? cartDataISO(idx, Number(c.vencimento)) : null; }
+function cartFechISO(c, idx){
+  const F = Number(c.fechamento) || 0; if(!F) return null;
+  const V = Number(c.vencimento) || 0;
+  return cartDataISO(V > F ? idx : idx - 1, F);
 }
-
-function faturaAtualCartao(cartaoId, ref){
-  const compras = carregarComprasCartao().filter(c => c.cartaoId === cartaoId);
-  return compras.reduce((s,c) => s + parcelaNoMes(c, ref), 0);
+// índice (ano*12+mês) do mês de vencimento da fatura em que a compra cai
+function cartIdxDaCompra(c, iso){
+  const p = String(iso).split('-').map(Number); const idx = p[0]*12 + (p[1]-1);
+  const F = Number(c.fechamento) || 0, V = Number(c.vencimento) || 0;
+  if(!F) return idx;                                   // sem fechamento informado: vale o mês da compra
+  const mesFech = p[2] <= F ? idx : idx + 1;
+  return V > F ? mesFech : mesFech + 1;
 }
-
-function comprometidoFuturoCartao(cartaoId, ref){
-  const compras = carregarComprasCartao().filter(c => c.cartaoId === cartaoId);
-  const mesRef = ref.getFullYear()*12 + ref.getMonth();
-  return compras.reduce((s,c) => {
-    const inicio = new Date(c.dataCompra + 'T00:00:00');
-    const mesInicio = inicio.getFullYear()*12 + inicio.getMonth();
-    const fim = mesInicio + c.parcelas - 1;
-    if(fim > mesRef){
-      const parcelasFuturas = fim - mesRef;
-      return s + (c.valor / c.parcelas) * parcelasFuturas;
-    }
-    return s;
-  }, 0);
+function cartParcelas(cp){
+  const n = Math.max(1, cp.parcelas || 1), base = Math.floor(cp.valor / n * 100) / 100, arr = [];
+  for(let i = 0; i < n - 1; i++) arr.push(base);
+  arr.push(Math.round((cp.valor - base*(n-1)) * 100) / 100);
+  return arr;
+}
+function cartItensFatura(c, idx){
+  const itens = [];
+  carregarComprasCartao().filter(x => x.cartaoId === c.id).forEach(cp => {
+    const k = idx - cartIdxDaCompra(c, cp.dataCompra), n = Math.max(1, cp.parcelas || 1);
+    if(k >= 0 && k < n) itens.push({ compra: cp, num: k+1, de: n, valor: cartParcelas(cp)[k] });
+  });
+  return itens;
+}
+function cartPagamentos(){ const l = lerLS('pagamentosFatura', []); return Array.isArray(l) ? l : []; }
+function cartPagosDaFatura(c, idx){ return cartPagamentos().filter(p => p.cartaoId === c.id && p.idx === idx); }
+function cartTotalFatura(c, idx){ return Math.round(cartItensFatura(c, idx).reduce((s,i) => s + i.valor, 0) * 100) / 100; }
+function cartPagoFatura(c, idx){ return Math.round(cartPagosDaFatura(c, idx).reduce((s,p) => s + p.valor, 0) * 100) / 100; }
+function cartStatus(c, idx){
+  const total = cartTotalFatura(c, idx), pago = cartPagoFatura(c, idx), hoje = hojeISO();
+  const venc = cartVencISO(c, idx), fech = cartFechISO(c, idx);
+  if(total <= 0.004 && pago <= 0.004) return { k:'vazia', t:'Sem compras' };
+  if(pago > 0.004 && pago >= total - 0.005) return { k:'paga', t:'Paga ✓' };
+  if(venc && hoje > venc) return { k:'vencida', t: pago > 0.004 ? 'Vencida (paga em parte)' : 'Vencida' };
+  if(pago > 0.004) return { k:'parcial', t:'Paga em parte' };
+  if(fech && hoje > fech) return { k:'fechada', t:'Fechada' + (venc ? ' · vence ' + cartBR(venc) : '') };
+  return { k:'aberta', t:'Aberta' };
+}
+// quanto do limite está ocupado: tudo que foi comprado (todas as parcelas) menos o que já foi pago
+function cartLimiteUsado(c){
+  const compras = carregarComprasCartao().filter(x => x.cartaoId === c.id);
+  const tot = compras.reduce((s,cp) => s + cp.valor, 0);
+  const pago = cartPagamentos().filter(p => p.cartaoId === c.id).reduce((s,p) => s + p.valor, 0);
+  return Math.max(0, Math.round((tot - pago) * 100) / 100);
+}
+function cartIdxsComDados(c){
+  const s = new Set();
+  carregarComprasCartao().filter(x => x.cartaoId === c.id).forEach(cp => { const i0 = cartIdxDaCompra(c, cp.dataCompra); for(let k = 0; k < Math.max(1, cp.parcelas||1); k++) s.add(i0 + k); });
+  cartPagamentos().filter(p => p.cartaoId === c.id).forEach(p => s.add(p.idx));
+  return [...s];
 }
 
 function renderCartoes(){
@@ -1088,33 +1174,140 @@ function renderCartoes(){
     wrap.innerHTML = '<div class="empty">Nenhum cartão cadastrado ainda.</div>';
     return;
   }
+  const idx = mesAtual.getFullYear()*12 + mesAtual.getMonth();
   wrap.innerHTML = cartoes.map(c => {
-    const fatura = faturaAtualCartao(c.id, mesAtual);
-    const futuro = comprometidoFuturoCartao(c.id, mesAtual);
-    const pct = c.limite ? Math.min(100, Math.round((fatura / c.limite) * 100)) : 0;
+    const total = cartTotalFatura(c, idx), pago = cartPagoFatura(c, idx), st = cartStatus(c, idx);
+    const usado = cartLimiteUsado(c), pct = c.limite ? Math.min(100, Math.round((usado / c.limite) * 100)) : 0;
+    const resta = Math.max(0, Math.round((total - pago) * 100) / 100);
+    const datas = (c.fechamento ? 'Fecha dia ' + esc(c.fechamento) : '') + (c.fechamento && c.vencimento ? ' · ' : '') + (c.vencimento ? 'vence dia ' + esc(c.vencimento) : '');
     return `
       <div class="cartao-item">
         <div class="topo">
           <div>
             <div class="nome">${esc(c.nome)}</div>
-            <div class="venc">${c.vencimento ? 'Vence dia ' + esc(c.vencimento) : 'Sem dia de vencimento definido'}</div>
+            <div class="venc">${datas || 'Sem datas definidas'}</div>
+            ${c.fechamento ? '' : `<div class="venc" style="color:var(--brick);font-weight:600">⚠ Informe o dia de fechamento (toque em ✎ Editar)</div>`}
           </div>
           <div style="text-align:right;">
-            <div class="fatura">${formatarMoeda(fatura)}</div>
-            <div class="venc">fatura atual</div>
+            <div class="fatura">${formatarMoeda(total)}</div>
+            <div class="venc">fatura de ${cartLabel(idx)}</div>
+            <div class="chip-fat st-${st.k}">${st.t}</div>
           </div>
         </div>
         ${c.limite ? `
           <div class="limite-bar"><span style="width:${pct}%"></span></div>
-          <div class="limite-txt">${pct}% do limite de ${formatarMoeda(c.limite)} · futuro comprometido: ${formatarMoeda(futuro)}</div>
+          <div class="limite-txt">Limite usado ${formatarMoeda(usado)} de ${formatarMoeda(c.limite)} · disponível ${formatarMoeda(Math.max(0, c.limite - usado))}</div>
         ` : ''}
         <div class="acoes">
           <button onclick="abrirSheetCompra('${idSeguro(c.id)}')">+ Compra</button>
+          <button onclick="abrirFaturas('${idSeguro(c.id)}')">📄 Faturas</button>
+          ${resta > 0.004 ? `<button class="pagar-fat" onclick="abrirPagarFatura('${idSeguro(c.id)}',${idx})">💸 Pagar fatura</button>` : ''}
+          <button onclick="abrirEditarCartao('${idSeguro(c.id)}')">✎</button>
           <button class="del" onclick="removerCartao('${idSeguro(c.id)}')">✕</button>
         </div>
       </div>
     `;
   }).join('');
+}
+
+/* lista de faturas (atual, anteriores e próximas) */
+let cartFaturasId = null;
+function abrirFaturas(id){ cartFaturasId = id; renderFaturas(); document.getElementById('sheetBgFaturas').classList.add('open'); }
+function fecharFaturas(){ document.getElementById('sheetBgFaturas').classList.remove('open'); cartFaturasId = null; }
+function renderFaturas(){
+  const c = carregarCartoes().find(x => x.id === cartFaturasId); if(!c) return;
+  const hoje = hojeISO(), idxHoje = cartIdxData(hoje);
+  const todos = new Set(cartIdxsComDados(c)); todos.add(idxHoje);
+  const lista = [...todos].sort((a,b) => a - b);
+  const anteriores = lista.filter(i => i < idxHoje).reverse(), futuras = lista.filter(i => i > idxHoje).slice(0, 12);
+  const linha = (i, aberta) => {
+    const total = cartTotalFatura(c, i), pago = cartPagoFatura(c, i), st = cartStatus(c, i), venc = cartVencISO(c, i), fech = cartFechISO(c, i);
+    const itens = cartItensFatura(c, i), pags = cartPagosDaFatura(c, i), resta = Math.max(0, Math.round((total - pago) * 100) / 100);
+    return `<details class="fat-row"${aberta ? ' open' : ''}>
+      <summary><span class="fat-mes">${cartLabel(i)}</span><span class="chip-fat st-${st.k}">${st.t}</span><span class="fat-val">${formatarMoeda(total)}</span></summary>
+      <div class="fat-det">
+        <div class="venc">${fech ? 'Fecha ' + cartBR(fech) + ' · ' : ''}${venc ? 'vence ' + cartBR(venc) : 'sem dia de vencimento'}</div>
+        ${itens.length ? itens.map(it => `<div class="fat-item"><span>${esc(it.compra.descricao)}${it.de > 1 ? ' (' + it.num + '/' + it.de + ')' : ''}<small> · compra ${cartBR(it.compra.dataCompra)}</small></span><span>${formatarMoeda(it.valor)}</span><button class="del" title="Apagar compra" onclick="removerCompraCartao('${idSeguro(it.compra.id)}')">✕</button></div>`).join('') : '<div class="venc">Nenhuma compra nesta fatura.</div>'}
+        ${pags.map(p => `<div class="fat-item fat-pago"><span>✓ Pago ${formatarMoeda(p.valor)} em ${cartBR(p.data)}</span><span></span><button class="del" title="Desfazer pagamento" onclick="desfazerPagamentoFatura('${idSeguro(p.id)}')">↶</button></div>`).join('')}
+        ${resta > 0.004 ? `<button class="save-btn" style="margin-top:10px" onclick="abrirPagarFatura('${idSeguro(c.id)}',${i})">💸 Pagar fatura (${formatarMoeda(resta)})</button>` : ''}
+      </div></details>`;
+  };
+  document.getElementById('fatConteudo').innerHTML = `
+    <h3>📄 Faturas — ${esc(c.nome)}</h3>
+    <div class="venc" style="margin-bottom:10px">${c.fechamento ? 'Fecha dia ' + esc(c.fechamento) : '⚠ sem dia de fechamento'}${c.vencimento ? ' · vence dia ' + esc(c.vencimento) : ''}${c.limite ? ' · limite ' + formatarMoeda(c.limite) : ''}</div>
+    <div class="fat-sec">Fatura atual</div>${linha(idxHoje, true)}
+    ${anteriores.length ? '<div class="fat-sec">Faturas anteriores</div>' + anteriores.map(i => linha(i, false)).join('') : '<div class="fat-sec">Faturas anteriores</div><div class="venc">Nenhuma ainda.</div>'}
+    ${futuras.length ? '<div class="fat-sec">Próximas faturas</div>' + futuras.map(i => linha(i, false)).join('') : ''}
+    <button class="cancel-link" onclick="fecharFaturas()">Fechar</button>`;
+}
+
+async function removerCompraCartao(id){
+  if(!(await confirmarGrande('Apagar esta compra do cartão?', 'Sim, apagar'))) return;
+  salvarComprasCartao(carregarComprasCartao().filter(x => x.id !== id));
+  renderTudo(); if(cartFaturasId) renderFaturas();
+}
+
+/* pagar a fatura */
+let cartPagarCtx = null;
+function abrirPagarFatura(cartaoId, idx){
+  const c = carregarCartoes().find(x => x.id === cartaoId); if(!c) return;
+  const resta = Math.max(0, Math.round((cartTotalFatura(c, idx) - cartPagoFatura(c, idx)) * 100) / 100);
+  cartPagarCtx = { cartaoId, idx };
+  document.getElementById('pfTitulo').textContent = 'Pagar fatura — ' + c.nome + ' (' + cartLabel(idx) + ')';
+  document.getElementById('pfInfo').textContent = 'Falta pagar ' + formatarMoeda(resta) + (cartVencISO(c, idx) ? ' · vence ' + cartBR(cartVencISO(c, idx)) : '') + '. O valor sai da conta escolhida e vira uma despesa "Cartão de crédito".';
+  document.getElementById('pfValor').value = resta.toFixed(2).replace('.', ',');
+  document.getElementById('pfData').value = hojeISO();
+  document.getElementById('pfConta').innerHTML = '<option value="">Dinheiro / sem conta</option>' + carregarContas().map(x => `<option value="${esc(x.id)}"${x.id === c.contaPadrao ? ' selected' : ''}>${esc(x.nome)}</option>`).join('');
+  document.getElementById('sheetBgPagarFat').classList.add('open');
+}
+function fecharPagarFatura(){ document.getElementById('sheetBgPagarFat').classList.remove('open'); cartPagarCtx = null; }
+function salvarPagamentoFatura(){
+  if(!cartPagarCtx) return;
+  const cartoes = carregarCartoes(), c = cartoes.find(x => x.id === cartPagarCtx.cartaoId); if(!c) return;
+  const idx = cartPagarCtx.idx;
+  const valor = Math.round(parseFloat(document.getElementById('pfValor').value.replace(/\./g,'').replace(',', '.')) * 100) / 100;
+  const data = document.getElementById('pfData').value, contaId = document.getElementById('pfConta').value || null;
+  if(!(valor > 0 && valor < 1e9) || !data){ alertaGrande('Preencha o valor e a data do pagamento.', 'aviso'); return; }
+  const id = 'pf' + Date.now().toString(36) + Math.random().toString(36).slice(2,5), criadoEm = Date.now();
+  const k = chaveDeData(data), lista = lerLS(k, []);
+  lista.push({ descricao: 'Fatura ' + c.nome + ' — ' + cartLabel(idx), valor, categoria: 'Cartão de crédito', subcategoria: null, contaId, data, tipo: 'saida', criadoEm, pagFaturaId: id });
+  Store.set(k, JSON.stringify(lista));
+  const pags = cartPagamentos(); pags.push({ id, cartaoId: c.id, idx, valor, data, contaId, criadoEm });
+  Store.set('pagamentosFatura', JSON.stringify(pags));
+  c.contaPadrao = contaId || null; salvarCartoesLS(cartoes);
+  fecharPagarFatura(); renderTudo(); if(cartFaturasId) renderFaturas();
+  alertaGrande('Fatura paga: ' + formatarMoeda(valor) + ' saiu' + (contaId ? ' da conta' : '') + ' e foi lançada como despesa "Cartão de crédito".', 'ok');
+}
+async function desfazerPagamentoFatura(id){
+  const p = cartPagamentos().find(x => x.id === id); if(!p) return;
+  if(!(await confirmarGrande('Desfazer este pagamento de ' + formatarMoeda(p.valor) + '? A despesa lançada também será apagada.', 'Sim, desfazer'))) return;
+  const k = chaveDeData(p.data);
+  Store.set(k, JSON.stringify(lerLS(k, []).filter(l => l.pagFaturaId !== id)));
+  Store.set('pagamentosFatura', JSON.stringify(cartPagamentos().filter(x => x.id !== id)));
+  renderTudo(); if(cartFaturasId) renderFaturas();
+}
+
+/* editar cartão (nome, limite, fechamento, vencimento) */
+let cartEditId = null;
+function abrirEditarCartao(id){
+  const c = carregarCartoes().find(x => x.id === id); if(!c) return;
+  cartEditId = id;
+  document.getElementById('ecNome').value = c.nome || '';
+  document.getElementById('ecLimite').value = c.limite ? String(c.limite).replace('.', ',') : '';
+  document.getElementById('ecFech').value = c.fechamento || '';
+  document.getElementById('ecVenc').value = c.vencimento || '';
+  document.getElementById('sheetBgEditCartao').classList.add('open');
+}
+function fecharEditarCartao(){ document.getElementById('sheetBgEditCartao').classList.remove('open'); cartEditId = null; }
+function salvarEditarCartao(){
+  const cartoes = carregarCartoes(), c = cartoes.find(x => x.id === cartEditId); if(!c) return;
+  const nome = document.getElementById('ecNome').value.trim();
+  const limite = parseFloat(document.getElementById('ecLimite').value.replace(/\./g,'').replace(',', '.')) || 0;
+  const fech = parseInt(document.getElementById('ecFech').value) || null, venc = parseInt(document.getElementById('ecVenc').value) || null;
+  if(!nome){ alertaGrande('Informe o nome do cartão.', 'aviso'); return; }
+  if((fech && (fech < 1 || fech > 31)) || (venc && (venc < 1 || venc > 31))){ alertaGrande('Os dias de fechamento e vencimento têm que ser de 1 a 31.', 'aviso'); return; }
+  c.nome = nome; c.limite = limite; c.fechamento = fech; c.vencimento = venc;
+  salvarCartoesLS(cartoes); fecharEditarCartao(); renderTudo();
 }
 
 /* ---------- contas bancárias ---------- */
@@ -1376,6 +1569,10 @@ function carregarCategorias(){
   if(Store.pronto && authPessoal && authPessoal.currentUser && !Store.get('migRepasse', false)){
     if(!cats.saida.some(c => c.nome === 'Repasse para a empresa')) cats.saida.push({ nome:'Repasse para a empresa', subs:[] });
     mudou = true; Store.set('migRepasse', JSON.stringify(true));
+  }
+  if(Store.pronto && authPessoal && authPessoal.currentUser && !Store.get('migCartao', false)){
+    if(!cats.saida.some(c => c.nome === 'Cartão de crédito')) cats.saida.push({ nome:'Cartão de crédito', subs:[] });
+    mudou = true; Store.set('migCartao', JSON.stringify(true));
   }
   if(mudou && Store.pronto && authPessoal && authPessoal.currentUser) salvarCategorias(cats);   // só grava quando algo mudou de verdade
   return cats;
@@ -2556,7 +2753,7 @@ function renderCadastros(){
   const sub = t => `<div style="font-size:12px;color:var(--ink-soft);margin-top:2px">${t}</div>`;
   const cs = carregarContas(), cc = carregarCartoes(), ci = carregarContasInvest();
   document.getElementById('cadContas').innerHTML = cs.length ? cs.map(c=>`<div class="conta-item"><div><div class="nome">${esc(c.nome)}</div>${sub('Saldo inicial '+formatarMoeda(c.saldoInicial))}</div><button class="del" onclick="removerConta('${idSeguro(c.id)}')">✕</button></div>`).join('') : vazio;
-  document.getElementById('cadCartoes').innerHTML = cc.length ? cc.map(c=>`<div class="conta-item"><div><div class="nome">${esc(c.nome)}</div>${sub((c.limite?'Limite '+formatarMoeda(c.limite):'Sem limite informado')+(c.vencimento?' · vence dia '+esc(c.vencimento):''))}</div><button class="del" onclick="removerCartao('${idSeguro(c.id)}')">✕</button></div>`).join('') : vazio;
+  document.getElementById('cadCartoes').innerHTML = cc.length ? cc.map(c=>`<div class="conta-item"><div><div class="nome">${esc(c.nome)}</div>${sub((c.limite?'Limite '+formatarMoeda(c.limite):'Sem limite informado')+(c.fechamento?' · fecha dia '+esc(c.fechamento):' · sem dia de fechamento')+(c.vencimento?' · vence dia '+esc(c.vencimento):''))}</div><div style="display:flex;gap:6px"><button class="del" onclick="abrirEditarCartao('${idSeguro(c.id)}')">✎</button><button class="del" onclick="removerCartao('${idSeguro(c.id)}')">✕</button></div></div>`).join('') : vazio;
   document.getElementById('cadInvest').innerHTML = ci.length ? ci.map(c=>`<div class="conta-item"><div><div class="nome">${esc(c.nome)}</div>${sub('Saldo inicial '+formatarMoeda(c.saldoInicial))}</div><button class="del" onclick="removerContaInvest('${idSeguro(c.id)}')">✕</button></div>`).join('') : vazio;
 }
 
