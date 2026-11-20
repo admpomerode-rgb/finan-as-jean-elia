@@ -1642,7 +1642,13 @@ async function gastosPropriosBuscar(manual){
       if(!(valor>0) || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
       novos.push({ id:doc.id, d, valor, iso });
     });
-    if(!novos.length){ if(st) st.textContent = 'Nenhum gasto próprio novo no Livro Caixa.'; if(manual) alertaGrande('Nenhum gasto próprio novo no Livro Caixa. Tudo que está lá já veio para cá.','ok'); return; }
+    if(!novos.length){
+      let total=0, pend=0, ja=0; snap.forEach(doc=>{ const d=doc.data(); total++; if(feitos[doc.id]||jaPL[doc.id]) ja++; else if(d.status!=='pago') pend++; });
+      let msg;
+      if(!total) msg = 'O Livro Caixa não tem nenhuma despesa marcada como "Gastos próprios". Abra o Livro Caixa (já com o arquivo novo), espere uns 10 segundos e tente de novo. Se continuar, a categoria lá pode ter outro nome.';
+      else if(pend && !ja) msg = 'Achei '+total+' gasto(s) próprio(s) no Livro Caixa, mas todos ainda estão PENDENTES (não pagos). Só entram os já pagos.';
+      else msg = 'Achei '+total+' gasto(s) próprio(s) no Livro Caixa: '+ja+' já vieram para cá e '+pend+' estão pendentes (não pagos). Não há nada novo.';
+      if(st) st.textContent = msg; if(manual) alertaGrande(msg,'aviso'); return; }
     novos.sort((a,b)=>a.iso.localeCompare(b.iso));
     const porMes = {}; let t = Date.now();
     novos.forEach(n=>{
