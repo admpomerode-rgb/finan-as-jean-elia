@@ -354,6 +354,12 @@
   }
   .rep-bar span{display:block; height:100%; background:var(--brick);}
   .rep-bar.in span{background:var(--green);}
+  .dono-jean{--dono:#2F6FDE; --dono-bg:#E8F0FD;}
+  .dono-elia{--dono:#E0559B; --dono-bg:#FDE9F3;}
+  .com-dono{border-left:5px solid var(--dono)!important; background:var(--dono-bg); padding-left:10px!important; border-radius:8px; margin-bottom:6px;}
+  .tag-dono{display:inline-block; font-size:11px; font-weight:700; padding:1px 8px; border-radius:20px; background:var(--dono-bg,#EEF1F6); color:var(--dono,var(--ink-soft)); border:1px solid var(--dono,var(--line)); margin-left:4px;}
+  .dono-seg button.active[data-v=Jean]{background:#E8F0FD; color:#2F6FDE; border-color:#2F6FDE;}
+  .dono-seg button.active[data-v=Elia]{background:#FDE9F3; color:#E0559B; border-color:#E0559B;}
   .conta-item{
     display:flex; align-items:center; justify-content:space-between;
     padding:12px 0; border-bottom:1px solid #EEF1F6;
@@ -612,6 +618,7 @@
       <div id="cadContas"></div>
       <div class="field" style="margin-top:12px"><label>Nome da conta</label><input type="text" id="novaContaNome" placeholder="Ex: Nubank, Itaú, Carteira..."></div>
       <div class="field"><label>Saldo inicial (R$)</label><input type="text" id="novaContaSaldo" inputmode="decimal" placeholder="0,00"></div>
+      <div class="field"><label>De quem é esta conta?</label><div id="novaContaDonoBox"></div></div>
       <button class="save-btn" onclick="adicionarConta()">Adicionar conta bancária</button>
     </div>
     <div class="card">
@@ -619,6 +626,7 @@
       <div id="cadCartoes"></div>
       <div class="field" style="margin-top:12px"><label>Nome do cartão</label><input type="text" id="novoCartaoNome" placeholder="Ex: Nubank Roxinho, Inter..."></div>
       <div class="field"><label>Limite (R$)</label><input type="text" id="novoCartaoLimite" inputmode="decimal" placeholder="0,00"></div>
+      <div class="field"><label>De quem é este cartão?</label><div id="novoCartaoDonoBox"></div></div>
       <div class="field"><label>Dia de fechamento da fatura</label><input type="text" id="novoCartaoFech" inputmode="numeric" placeholder="Ex: 3"></div>
       <div class="field"><label>Dia de vencimento da fatura</label><input type="text" id="novoCartaoVenc" inputmode="numeric" placeholder="Ex: 10"></div>
       <button class="save-btn" onclick="adicionarCartao()">Adicionar cartão</button>
@@ -669,6 +677,7 @@
 <div id="fabBackdrop" onclick="fecharMenuFab()" style="display:none;position:fixed;inset:0;z-index:44"></div>
 <div class="fab-menu" id="fabMenu">
   <button id="fabAplicar" onclick="abrirAplicar('aplicacao')">💰 Aplicar dinheiro</button>
+  <button id="fabTransf" onclick="fecharMenuFab();abrirSheetTransferencia()">↔️ Transferência entre contas</button>
   <button id="fabNovo" onclick="fecharMenuFab();abrirSheet()">✏️ Novo lançamento</button>
 </div>
 <button class="fab" id="fabAdd" onclick="abrirMenuFab()">+</button>
@@ -738,12 +747,22 @@
       <select id="fSubcategoria"></select>
     </div>
     <div class="field">
-      <label>Conta</label>
-      <select id="fConta"></select>
+      <label>Conta ou cartão</label>
+      <select id="fConta" onchange="aoMudarConta()"></select>
+    </div>
+    <div id="fCartaoBox" style="display:none">
+      <div class="field">
+        <label>Parcelas</label>
+        <input id="fParcelas" type="text" inputmode="numeric" value="1">
+      </div>
+      <div class="field">
+        <label>Em qual fatura entra?</label>
+        <select id="fFatura"></select>
+      </div>
     </div>
     <div class="field">
       <label>Data</label>
-      <input id="fData" type="date">
+      <input id="fData" type="date" onchange="atualizarFaturaOpcoes()">
     </div>
     <button class="save-btn" onclick="salvarLancamento()">Salvar lançamento</button>
     <button class="cancel-link" onclick="fecharSheet()">Cancelar</button>
@@ -823,11 +842,23 @@
   </div>
 </div>
 
+<div class="sheet-bg" id="sheetBgEditConta" onclick="if(event.target===this) fecharEditarConta()">
+  <div class="sheet">
+    <h3>Editar conta</h3>
+    <div class="field"><label>Nome da conta</label><input id="ecoNome" type="text"></div>
+    <div class="field"><label>Saldo inicial (R$)</label><input id="ecoSaldo" type="text" inputmode="decimal" placeholder="0,00"></div>
+    <div class="field"><label>De quem é esta conta?</label><div id="ecoDonoBox"></div></div>
+    <button class="save-btn" onclick="salvarEditarConta()">Salvar</button>
+    <button class="cancel-link" onclick="fecharEditarConta()">Cancelar</button>
+  </div>
+</div>
+
 <div class="sheet-bg" id="sheetBgEditCartao" onclick="if(event.target===this) fecharEditarCartao()">
   <div class="sheet">
     <h3>Editar cartão</h3>
     <div class="field"><label>Nome do cartão</label><input id="ecNome" type="text"></div>
     <div class="field"><label>Limite (R$)</label><input id="ecLimite" type="text" inputmode="decimal" placeholder="0,00"></div>
+    <div class="field"><label>De quem é este cartão?</label><div id="ecDonoBox"></div></div>
     <div class="field"><label>Dia de fechamento da fatura</label><input id="ecFech" type="text" inputmode="numeric" placeholder="Ex: 3"></div>
     <div class="field"><label>Dia de vencimento da fatura</label><input id="ecVenc" type="text" inputmode="numeric" placeholder="Ex: 10"></div>
     <button class="save-btn" onclick="salvarEditarCartao()">Salvar</button>
@@ -1047,13 +1078,15 @@ function adicionarCartao(){
   const vencimento = parseInt(vencEl.value) || null;
   const fechamento = parseInt(fechEl.value) || null;
   if(!nome) return;
+  const dono = donoGet('novoCartaoDono');
+  if(!dono){ alertaGrande('Escolha de quem é o cartão: Jean ou Elia.', 'aviso'); return; }
   if((fechamento && (fechamento < 1 || fechamento > 31)) || (vencimento && (vencimento < 1 || vencimento > 31))){ alertaGrande('Os dias de fechamento e vencimento têm que ser de 1 a 31.', 'aviso'); return; }
 
   const cartoes = carregarCartoes();
-  cartoes.push({ id: 'cc' + Date.now(), nome, limite, vencimento, fechamento });
+  cartoes.push({ id: 'cc' + Date.now(), nome, limite, vencimento, fechamento, dono });
   salvarCartoesLS(cartoes);
 
-  nomeEl.value = ''; limiteEl.value = ''; vencEl.value = ''; fechEl.value = '';
+  nomeEl.value = ''; limiteEl.value = ''; vencEl.value = ''; fechEl.value = ''; donoSet('novoCartaoDono', '');
   renderTudo();
 }
 
@@ -1118,7 +1151,8 @@ function cartFechISO(c, idx){
   return cartDataISO(V > F ? idx : idx - 1, F);
 }
 // índice (ano*12+mês) do mês de vencimento da fatura em que a compra cai
-function cartIdxDaCompra(c, iso){
+function cartIdxDaCompra(c, iso, cp){
+  if(cp && cp.faturaIdx != null && isFinite(cp.faturaIdx)) return Number(cp.faturaIdx);   // fatura escolhida à mão
   const p = String(iso).split('-').map(Number); const idx = p[0]*12 + (p[1]-1);
   const F = Number(c.fechamento) || 0, V = Number(c.vencimento) || 0;
   if(!F) return idx;                                   // sem fechamento informado: vale o mês da compra
@@ -1134,7 +1168,7 @@ function cartParcelas(cp){
 function cartItensFatura(c, idx){
   const itens = [];
   carregarComprasCartao().filter(x => x.cartaoId === c.id).forEach(cp => {
-    const k = idx - cartIdxDaCompra(c, cp.dataCompra), n = Math.max(1, cp.parcelas || 1);
+    const k = idx - cartIdxDaCompra(c, cp.dataCompra, cp), n = Math.max(1, cp.parcelas || 1);
     if(k >= 0 && k < n) itens.push({ compra: cp, num: k+1, de: n, valor: cartParcelas(cp)[k] });
   });
   return itens;
@@ -1162,7 +1196,7 @@ function cartLimiteUsado(c){
 }
 function cartIdxsComDados(c){
   const s = new Set();
-  carregarComprasCartao().filter(x => x.cartaoId === c.id).forEach(cp => { const i0 = cartIdxDaCompra(c, cp.dataCompra); for(let k = 0; k < Math.max(1, cp.parcelas||1); k++) s.add(i0 + k); });
+  carregarComprasCartao().filter(x => x.cartaoId === c.id).forEach(cp => { const i0 = cartIdxDaCompra(c, cp.dataCompra, cp); for(let k = 0; k < Math.max(1, cp.parcelas||1); k++) s.add(i0 + k); });
   cartPagamentos().filter(p => p.cartaoId === c.id).forEach(p => s.add(p.idx));
   return [...s];
 }
@@ -1181,10 +1215,10 @@ function renderCartoes(){
     const resta = Math.max(0, Math.round((total - pago) * 100) / 100);
     const datas = (c.fechamento ? 'Fecha dia ' + esc(c.fechamento) : '') + (c.fechamento && c.vencimento ? ' · ' : '') + (c.vencimento ? 'vence dia ' + esc(c.vencimento) : '');
     return `
-      <div class="cartao-item">
+      <div class="cartao-item ${c.dono ? 'com-dono ' + classeDono(c.dono) : ''}">
         <div class="topo">
           <div>
-            <div class="nome">${esc(c.nome)}</div>
+            <div class="nome">${esc(c.nome)}${c.dono ? ' <span class="tag-dono ' + classeDono(c.dono) + '">● ' + c.dono + '</span>' : ' <span class="tag-dono">⚠ de quem é? (toque em ✎)</span>'}</div>
             <div class="venc">${datas || 'Sem datas definidas'}</div>
             ${c.fechamento ? '' : `<div class="venc" style="color:var(--brick);font-weight:600">⚠ Informe o dia de fechamento (toque em ✎ Editar)</div>`}
           </div>
@@ -1227,7 +1261,7 @@ function renderFaturas(){
       <summary><span class="fat-mes">${cartLabel(i)}</span><span class="chip-fat st-${st.k}">${st.t}</span><span class="fat-val">${formatarMoeda(total)}</span></summary>
       <div class="fat-det">
         <div class="venc">${fech ? 'Fecha ' + cartBR(fech) + ' · ' : ''}${venc ? 'vence ' + cartBR(venc) : 'sem dia de vencimento'}</div>
-        ${itens.length ? itens.map(it => `<div class="fat-item"><span>${esc(it.compra.descricao)}${it.de > 1 ? ' (' + it.num + '/' + it.de + ')' : ''}<small> · compra ${cartBR(it.compra.dataCompra)}</small></span><span>${formatarMoeda(it.valor)}</span><button class="del" title="Apagar compra" onclick="removerCompraCartao('${idSeguro(it.compra.id)}')">✕</button></div>`).join('') : '<div class="venc">Nenhuma compra nesta fatura.</div>'}
+        ${itens.length ? itens.map(it => `<div class="fat-item"><span>${esc(it.compra.descricao)}${it.de > 1 ? ' (' + it.num + '/' + it.de + ')' : ''}<small> · compra ${cartBR(it.compra.dataCompra)}</small></span><span>${formatarMoeda(it.valor)}</span><button class="del" title="Editar compra" onclick="editarCompraCartao('${idSeguro(it.compra.id)}')">✎</button><button class="del" title="Apagar compra" onclick="removerCompraCartao('${idSeguro(it.compra.id)}')">✕</button></div>`).join('') : '<div class="venc">Nenhuma compra nesta fatura.</div>'}
         ${pags.map(p => `<div class="fat-item fat-pago"><span>✓ Pago ${formatarMoeda(p.valor)} em ${cartBR(p.data)}</span><span></span><button class="del" title="Desfazer pagamento" onclick="desfazerPagamentoFatura('${idSeguro(p.id)}')">↶</button></div>`).join('')}
         ${resta > 0.004 ? `<button class="save-btn" style="margin-top:10px" onclick="abrirPagarFatura('${idSeguro(c.id)}',${i})">💸 Pagar fatura (${formatarMoeda(resta)})</button>` : ''}
       </div></details>`;
@@ -1296,6 +1330,7 @@ function abrirEditarCartao(id){
   document.getElementById('ecLimite').value = c.limite ? String(c.limite).replace('.', ',') : '';
   document.getElementById('ecFech').value = c.fechamento || '';
   document.getElementById('ecVenc').value = c.vencimento || '';
+  donoSet('ecDono', c.dono || '');
   document.getElementById('sheetBgEditCartao').classList.add('open');
 }
 function fecharEditarCartao(){ document.getElementById('sheetBgEditCartao').classList.remove('open'); cartEditId = null; }
@@ -1306,11 +1341,29 @@ function salvarEditarCartao(){
   const fech = parseInt(document.getElementById('ecFech').value) || null, venc = parseInt(document.getElementById('ecVenc').value) || null;
   if(!nome){ alertaGrande('Informe o nome do cartão.', 'aviso'); return; }
   if((fech && (fech < 1 || fech > 31)) || (venc && (venc < 1 || venc > 31))){ alertaGrande('Os dias de fechamento e vencimento têm que ser de 1 a 31.', 'aviso'); return; }
-  c.nome = nome; c.limite = limite; c.fechamento = fech; c.vencimento = venc;
+  const donoEd = donoGet('ecDono');
+  if(!donoEd){ alertaGrande('Escolha de quem é o cartão: Jean ou Elia.', 'aviso'); return; }
+  c.nome = nome; c.limite = limite; c.fechamento = fech; c.vencimento = venc; c.dono = donoEd;
   salvarCartoesLS(cartoes); fecharEditarCartao(); renderTudo();
 }
 
 /* ---------- contas bancárias ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  ['novaContaDonoBox','novoCartaoDonoBox','ecDonoBox','ecoDonoBox'].forEach(id => {
+    const box = document.getElementById(id); if(box) box.innerHTML = donoSegHTML(id.replace('Box',''));
+  });
+});
+
+
+/* ---------- de quem é a conta/cartão: Jean (azul) ou Elia (rosa) ---------- */
+function classeDono(d){ return d === 'Jean' ? 'dono-jean' : d === 'Elia' ? 'dono-elia' : ''; }
+function donoDaConta(contaId){ const c = todasContas().find(x => x.id === contaId); return c ? (c.dono || '') : ''; }
+function donoDoCartao(cartaoId){ const c = carregarCartoes().find(x => x.id === cartaoId); return c ? (c.dono || '') : ''; }
+function tagDono(nome, dono){ return `<span class="tag-dono ${classeDono(dono)}">${dono ? '● ' : ''}${esc(nome)}${dono ? ' · ' + dono : ''}</span>`; }
+function donoSegHTML(id){ return `<div class="seg dono-seg" id="${id}" data-v=""><button type="button" data-v="Jean" onclick="donoClick(this)">🔵 Jean</button><button type="button" data-v="Elia" onclick="donoClick(this)">🌸 Elia</button></div>`; }
+function donoClick(btn){ const seg = btn.parentNode; seg.dataset.v = btn.dataset.v; seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn)); }
+function donoSet(id, v){ const seg = document.getElementById(id); if(!seg) return; seg.dataset.v = v || ''; seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === v)); }
+function donoGet(id){ const seg = document.getElementById(id); return seg ? (seg.dataset.v || '') : ''; }
 
 function carregarContas(){
   return lerLS('contasBancarias', []);
@@ -1327,13 +1380,15 @@ function adicionarConta(){
   const saldoStr = saldoEl.value.replace(/\./g,'').replace(',', '.');
   const saldoInicial = parseFloat(saldoStr) || 0;
   if(!nome) return;
+  const dono = donoGet('novaContaDono');
+  if(!dono){ alertaGrande('Escolha de quem é a conta: Jean ou Elia.', 'aviso'); return; }
 
   const contas = carregarContas();
-  contas.push({ id: 'c' + Date.now(), nome, saldoInicial });
+  contas.push({ id: 'c' + Date.now(), nome, saldoInicial, dono });
   salvarContas(contas);
 
   nomeEl.value = '';
-  saldoEl.value = '';
+  saldoEl.value = ''; donoSet('novaContaDono', '');
   renderTudo();
 }
 
@@ -1342,6 +1397,27 @@ async function removerConta(id){
   const contas = carregarContas().filter(c => c.id !== id);
   salvarContas(contas);
   renderTudo();
+}
+
+let contaEditId = null;
+function abrirEditarConta(id){
+  const c = carregarContas().find(x => x.id === id); if(!c) return;
+  contaEditId = id;
+  document.getElementById('ecoNome').value = c.nome || '';
+  document.getElementById('ecoSaldo').value = String(c.saldoInicial || 0).replace('.', ',');
+  donoSet('ecoDono', c.dono || '');
+  document.getElementById('sheetBgEditConta').classList.add('open');
+}
+function fecharEditarConta(){ document.getElementById('sheetBgEditConta').classList.remove('open'); contaEditId = null; }
+function salvarEditarConta(){
+  const contas = carregarContas(), c = contas.find(x => x.id === contaEditId); if(!c) return;
+  const nome = document.getElementById('ecoNome').value.trim();
+  const saldo = parseFloat(document.getElementById('ecoSaldo').value.replace(/\./g,'').replace(',', '.'));
+  const dono = donoGet('ecoDono');
+  if(!nome){ alertaGrande('Informe o nome da conta.', 'aviso'); return; }
+  if(!dono){ alertaGrande('Escolha de quem é a conta: Jean ou Elia.', 'aviso'); return; }
+  c.nome = nome; c.saldoInicial = isFinite(saldo) ? saldo : 0; c.dono = dono;
+  salvarContas(contas); fecharEditarConta(); renderTudo();
 }
 
 function todosLancamentosLocais(){
@@ -1374,22 +1450,45 @@ function renderContas(){
   wrap.innerHTML = contas.map(c => {
     const saldo = saldoAtualConta(c);
     return `
-      <div class="conta-item">
+      <div class="conta-item ${c.dono ? 'com-dono ' + classeDono(c.dono) : ''}">
         <div>
-          <div class="nome">${esc(c.nome)}</div>
+          <div class="nome">${esc(c.nome)}${c.dono ? ' <span class="tag-dono ' + classeDono(c.dono) + '">● ' + c.dono + '</span>' : ' <span class="tag-dono">⚠ toque em ✎ e escolha Jean ou Elia</span>'}</div>
           <div class="saldo" style="color:${saldo>=0 ? 'var(--green)' : 'var(--brick)'}">${formatarMoeda(saldo)}</div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center"><button class="via-btn peq" onclick="abrirExtrato('${idSeguro(c.id)}')">📄 Extrato</button><button class="via-btn peq verde" onclick="abrirOfx('${idSeguro(c.id)}')">📥 OFX</button><button class="del" onclick="removerConta('${idSeguro(c.id)}')">✕</button></div>
+        <div style="display:flex;gap:6px;align-items:center"><button class="via-btn peq" onclick="abrirEditarConta('${idSeguro(c.id)}')">✎</button><button class="via-btn peq" onclick="abrirExtrato('${idSeguro(c.id)}')">📄 Extrato</button><button class="via-btn peq verde" onclick="abrirOfx('${idSeguro(c.id)}')">📥 OFX</button><button class="del" onclick="removerConta('${idSeguro(c.id)}')">✕</button></div>
       </div>
     `;
   }).join('');
 }
 
 function popularSelectConta(){
-  const contas = carregarContas();
-  const sel = document.getElementById('fConta');
-  sel.innerHTML = '<option value="">Dinheiro / sem conta</option>' +
-    contas.map(c => `<option value="${esc(c.id)}">${esc(c.nome)}</option>`).join('');
+  const sel = document.getElementById('fConta'); const antes = sel.value;
+  const contas = carregarContas(), cartoes = carregarCartoes();
+  let h = '<option value="">Dinheiro / sem conta</option>' + contas.map(c => `<option value="${esc(c.id)}">${esc(c.nome)}${c.dono ? ' · ' + c.dono : ''}</option>`).join('');
+  if(tipoAtual === 'saida' && cartoes.length) h += '<optgroup label="💳 Cartões de crédito">' + cartoes.map(c => `<option value="cartao:${esc(c.id)}">💳 ${esc(c.nome)}${c.dono ? ' · ' + c.dono : ''}</option>`).join('') + '</optgroup>';
+  sel.innerHTML = h;
+  if([...sel.options].some(o => o.value === antes)) sel.value = antes;
+  aoMudarConta();
+}
+function aoMudarConta(){
+  const v = document.getElementById('fConta').value, ehCartao = v.indexOf('cartao:') === 0;
+  document.getElementById('fCartaoBox').style.display = ehCartao ? '' : 'none';
+  if(ehCartao) atualizarFaturaOpcoes();
+}
+// lista de faturas para escolher onde a compra entra ("Automática" usa a data da compra e o fechamento do cartão)
+function atualizarFaturaOpcoes(manter){
+  const v = document.getElementById('fConta').value; if(v.indexOf('cartao:') !== 0) return;
+  const c = carregarCartoes().find(x => x.id === v.slice(7)); if(!c) return;
+  const sel = document.getElementById('fFatura');
+  const data = document.getElementById('fData').value || hojeISO();
+  const auto = cartIdxDaCompra(c, data);
+  const antes = manter !== undefined ? String(manter) : sel.value;
+  const venc = i => cartVencISO(c, i) ? ' · vence ' + cartBR(cartVencISO(c, i)) : '';
+  let ini = auto - 3, fim = auto + 12; if(antes !== '' && isFinite(Number(antes))){ ini = Math.min(ini, Number(antes)); fim = Math.max(fim, Number(antes)); }
+  let h = `<option value="">Automática: ${cartLabel(auto)}${venc(auto)}</option>`;
+  for(let i = ini; i <= fim; i++) h += `<option value="${i}">${cartLabel(i)}${venc(i)}</option>`;
+  sel.innerHTML = h; sel.value = antes;
+  if(sel.value !== antes) sel.value = '';
 }
 
 /* ---------- transferências entre contas ---------- */
@@ -1500,7 +1599,7 @@ function renderTransferencias(){
     .map(t => `
       <div class="transf-item">
         <div>
-          <div class="rota">${esc(nomeConta(t.origemId))} → ${esc(nomeConta(t.destinoId))}</div>
+          <div class="rota">${tagDono(nomeConta(t.origemId), donoDaConta(t.origemId))} → ${tagDono(nomeConta(t.destinoId), donoDaConta(t.destinoId))}</div>
           <div class="data-desc">${new Date(t.data+'T00:00:00').toLocaleDateString('pt-BR')}${t.descricao ? ' · ' + esc(t.descricao) : ''}</div>
         </div>
         <div class="lanc-right">
@@ -1808,16 +1907,18 @@ function renderRelatorios(){
 function renderLancamentos(lista){
   const wrap = document.getElementById('listaLancamentos');
   const chave = chaveLocal();
-  if(!lista.length){
+  // transferências entre contas do mês aparecem junto (para editar ou apagar direto daqui)
+  const refMes = mesAtual.getFullYear()*12 + mesAtual.getMonth();
+  const transfMes = carregarTransferencias().filter(t => !t.kind && t.data && cartIdxData(t.data) === refMes);
+  const todasC = todasContas(); const nomeC = id => (todasC.find(c => c.id === id) || {}).nome || '—';
+  if(!lista.length && !transfMes.length){
     wrap.innerHTML = '<div class="empty">Nada lançado ainda neste mês.</div>';
   } else {
-    wrap.innerHTML = lista
-      .sort((a,b)=> new Date(b.data) - new Date(a.data))
-      .map(l => `
-        <div class="lanc">
+    const itens = lista.map(l => ({ data:l.data, html: `
+        <div class="lanc ${donoDaConta(l.contaId) ? 'com-dono ' + classeDono(donoDaConta(l.contaId)) : ''}">
           <div>
             <div class="desc">${esc(l.descricao)}</div>
-            <div class="cat">${esc(l.categoria)}${l.subcategoria ? ' › ' + esc(l.subcategoria) : ''} · ${new Date(l.data+'T00:00:00').toLocaleDateString('pt-BR')}</div>
+            <div class="cat">${esc(l.categoria)}${l.subcategoria ? ' › ' + esc(l.subcategoria) : ''} · ${new Date(l.data+'T00:00:00').toLocaleDateString('pt-BR')}${l.contaId ? ' ' + tagDono(nomeC(l.contaId), donoDaConta(l.contaId)) : ''}</div>
           </div>
           <div class="lanc-right">
             <div class="val ${l.tipo==='entrada'?'in':'out'}">${l.tipo==='entrada'?'+':'−'} ${formatarMoeda(l.valor)}</div>
@@ -1826,8 +1927,22 @@ function renderLancamentos(lista){
               <button class="del" onclick="excluirLancamento('${idSeguro(chave)}', ${Number(l.criadoEm) || 0})">✕</button>
             </div>
           </div>
-        </div>
-      `).join('');
+        </div>` }))
+      .concat(transfMes.map(t => ({ data:t.data, html: `
+        <div class="lanc ${donoDaConta(t.origemId) ? 'com-dono ' + classeDono(donoDaConta(t.origemId)) : ''}">
+          <div>
+            <div class="desc">↔️ Transferência${t.descricao ? ' — ' + esc(t.descricao) : ''}</div>
+            <div class="cat">${new Date(t.data+'T00:00:00').toLocaleDateString('pt-BR')} ${tagDono(nomeC(t.origemId), donoDaConta(t.origemId))} → ${tagDono(nomeC(t.destinoId), donoDaConta(t.destinoId))}</div>
+          </div>
+          <div class="lanc-right">
+            <div class="val" style="color:var(--ink-soft)">${formatarMoeda(t.valor)}</div>
+            <div class="acoes">
+              <button onclick="editarTransferencia('${idSeguro(t.id)}')">✎</button>
+              <button class="del" onclick="removerTransferencia('${idSeguro(t.id)}')">✕</button>
+            </div>
+          </div>
+        </div>` })));
+    wrap.innerHTML = itens.sort((a,b)=> new Date(b.data) - new Date(a.data)).map(x => x.html).join('');
   }
 
   const entradas = lista.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+l.valor,0);
@@ -2049,7 +2164,7 @@ function renderProlabore(){
 /* ---------- modal de novo lançamento ---------- */
 
 let tipoAtual = 'entrada';
-let editandoLancamento = null; // { chave, criadoEm }
+let editandoLancamento = null, editandoCompra = null, cartVoltarFaturas = null; // { chave, criadoEm }
 
 function abrirSheet(){
   document.getElementById('lancTitulo').textContent = 'Novo lançamento';
@@ -2062,14 +2177,17 @@ function fecharSheet(){
   document.getElementById('sheetBg').classList.remove('open');
   document.getElementById('fDesc').value = '';
   document.getElementById('fValor').value = '';
-  editandoLancamento = null;
+  editandoLancamento = null; editandoCompra = null;
+  document.getElementById('fParcelas').value = '1';
   extRetomar();
+  if(cartVoltarFaturas){ const idv = cartVoltarFaturas; cartVoltarFaturas = null; abrirFaturas(idv); }   // voltou de editar uma compra: reabre as faturas
 }
 function setTipo(t){
   tipoAtual = t;
   document.getElementById('segIn').classList.toggle('active', t==='entrada');
   document.getElementById('segOut').classList.toggle('active', t==='saida');
   popularSelectCategoria();
+  popularSelectConta();
 }
 
 function editarLancamento(chave, criadoEm){
@@ -2094,8 +2212,29 @@ function editarLancamento(chave, criadoEm){
   document.getElementById('sheetBg').classList.add('open');
 }
 
+function editarCompraCartao(id){
+  const cp = carregarComprasCartao().find(x => x.id === id); if(!cp) return;
+  cartVoltarFaturas = cartFaturasId; fecharFaturas();
+  editandoCompra = id; editandoLancamento = null;
+  setTipo('saida'); popularSelectConta();
+  document.getElementById('lancTitulo').textContent = 'Editar compra no cartão';
+  document.getElementById('fDesc').value = cp.descricao || '';
+  document.getElementById('fValor').value = String(cp.valor).replace('.', ',');
+  document.getElementById('fData').value = cp.dataCompra;
+  popularSelectCategoria();
+  if(cp.categoria) document.getElementById('fCategoria').value = cp.categoria;
+  popularSelectSubcategoria();
+  document.getElementById('fSubcategoria').value = cp.subcategoria || '';
+  document.getElementById('fConta').value = 'cartao:' + cp.cartaoId; aoMudarConta();
+  document.getElementById('fParcelas').value = cp.parcelas || 1;
+  atualizarFaturaOpcoes(cp.faturaIdx == null ? '' : cp.faturaIdx);
+  document.getElementById('sheetBg').classList.add('open');
+}
+
 async function excluirLancamento(chave, criadoEm){
   if(!(await confirmarGrande('Apagar este lançamento?', 'Sim, apagar'))) return;
+  const apagado = lerLS(chave, []).find(item => item.criadoEm === criadoEm);
+  if(apagado && apagado.pagFaturaId) Store.set('pagamentosFatura', JSON.stringify(cartPagamentos().filter(x => x.id !== apagado.pagFaturaId)));   // era pagamento de fatura: a fatura volta a ficar em aberto
   const lista = lerLS(chave, []).filter(item => item.criadoEm !== criadoEm);
   Store.set(chave, JSON.stringify(lista));
   render();
@@ -2107,7 +2246,8 @@ function salvarLancamento(){
   const valor = parseFloat(valorStr);
   const categoria = document.getElementById('fCategoria').value;
   const subcategoria = document.getElementById('fSubcategoria').value || null;
-  const contaId = document.getElementById('fConta').value || null;
+  const contaSel = document.getElementById('fConta').value || '';
+  const contaId = contaSel.indexOf('cartao:') === 0 ? null : (contaSel || null);
   const data = document.getElementById('fData').value;
 
   if(!desc || !(valor > 0 && valor < 1e9) || !data){
@@ -2115,15 +2255,37 @@ function salvarLancamento(){
     return;
   }
 
+  // despesa no cartão de crédito: vira compra na fatura escolhida (não é despesa do mês até pagar a fatura)
+  if(tipoAtual === 'saida' && contaSel.indexOf('cartao:') === 0){
+    const antigoL = editandoLancamento ? (lerLS(editandoLancamento.chave, []).find(item => item.criadoEm === editandoLancamento.criadoEm) || {}) : {};
+    if(antigoL.pagFaturaId){ alertaGrande('Este lançamento é o pagamento de uma fatura. Escolha uma conta (não um cartão).', 'aviso'); return; }
+    const parcelas = Math.min(120, Math.max(1, parseInt(document.getElementById('fParcelas').value) || 1));
+    const fv = document.getElementById('fFatura').value, faturaIdx = fv === '' ? null : Number(fv);
+    const cartaoId = contaSel.slice(7), cartao = carregarCartoes().find(x => x.id === cartaoId); if(!cartao) return;
+    if(editandoLancamento) Store.set(editandoLancamento.chave, JSON.stringify(lerLS(editandoLancamento.chave, []).filter(item => item.criadoEm !== editandoLancamento.criadoEm)));   // era lançamento comum: vira compra
+    const compras = carregarComprasCartao(), cp0 = editandoCompra ? compras.find(x => x.id === editandoCompra) : null;
+    const dadosCp = { cartaoId, descricao: desc, valor, parcelas, dataCompra: data, categoria, subcategoria, faturaIdx };
+    if(cp0) Object.assign(cp0, dadosCp); else compras.push(Object.assign({ id: 'cp' + Date.now(), criadoEm: Date.now() }, dadosCp));
+    salvarComprasCartao(compras);
+    const idxFat = cartIdxDaCompra(cartao, data, dadosCp);
+    fecharSheet(); renderTudo();
+    alertaGrande('Compra lançada no cartão ' + cartao.nome + ', na fatura de ' + cartLabel(idxFat) + (parcelas > 1 ? ' (' + parcelas + 'x de ' + formatarMoeda(valor / parcelas) + ')' : '') + '.', 'ok');
+    return;
+  }
+  if(editandoCompra){ salvarComprasCartao(carregarComprasCartao().filter(x => x.id !== editandoCompra)); editandoCompra = null; }   // era compra no cartão: vira lançamento comum
+
   const novaChave = chaveDeData(data);
 
   if(editandoLancamento){
     // remove o registro antigo (pode estar num mês diferente do novo)
-    const listaAntiga = lerLS(editandoLancamento.chave, [])
+    const listaAntiga0 = lerLS(editandoLancamento.chave, []);
+    const listaAntiga = listaAntiga0
       .filter(item => item.criadoEm !== editandoLancamento.criadoEm);
     Store.set(editandoLancamento.chave, JSON.stringify(listaAntiga));
 
-    const registro = { descricao: desc, valor, categoria, subcategoria, contaId, data, tipo: tipoAtual, criadoEm: editandoLancamento.criadoEm };
+    const antigo = (lerLS(editandoLancamento.chave, []).concat(listaAntiga0).find(item => item.criadoEm === editandoLancamento.criadoEm)) || {};
+    const registro = Object.assign({}, antigo, { descricao: desc, valor, categoria, subcategoria, contaId, data, tipo: tipoAtual, criadoEm: editandoLancamento.criadoEm });
+    if(antigo.pagFaturaId){ const pags = cartPagamentos(), pg = pags.find(x => x.id === antigo.pagFaturaId); if(pg){ pg.valor = valor; pg.data = data; pg.contaId = contaId; Store.set('pagamentosFatura', JSON.stringify(pags)); } }
     const listaNova = lerLS(novaChave, []);
     listaNova.push(registro);
     Store.set(novaChave, JSON.stringify(listaNova));
@@ -2488,7 +2650,7 @@ function renderExtrato(){
   const box = document.getElementById('extConteudo'); const d = extDados(); if(!d){ fecharExtrato(); return; }
   const cor = v => v>=0 ? 'var(--green)' : 'var(--brick)';
   box.innerHTML = `
-    <h3 style="margin-bottom:4px">📄 Extrato — ${esc(d.conta.nome)}</h3>
+    <h3 style="margin-bottom:4px">📄 Extrato — ${esc(d.conta.nome)}${d.conta.dono ? ' <span class="tag-dono ' + classeDono(d.conta.dono) + '">● ' + d.conta.dono + '</span>' : ''}</h3>
     <div class="month-nav" style="margin:10px 0 12px;display:flex"><button onclick="extMudarMes(-1)">‹</button><div class="label">${EXT_MESES[extMes.getMonth()]} ${extMes.getFullYear()}</div><button onclick="extMudarMes(1)">›</button></div>
     <div class="via-kpis" style="margin-top:0">
       <div class="via-kpi"><small>Saldo anterior</small><b style="color:${cor(d.antes)}">${formatarMoeda(d.antes)}</b></div>
@@ -2752,8 +2914,8 @@ function renderCadastros(){
   const vazio = '<div class="empty">Nenhum cadastrado ainda.</div>';
   const sub = t => `<div style="font-size:12px;color:var(--ink-soft);margin-top:2px">${t}</div>`;
   const cs = carregarContas(), cc = carregarCartoes(), ci = carregarContasInvest();
-  document.getElementById('cadContas').innerHTML = cs.length ? cs.map(c=>`<div class="conta-item"><div><div class="nome">${esc(c.nome)}</div>${sub('Saldo inicial '+formatarMoeda(c.saldoInicial))}</div><button class="del" onclick="removerConta('${idSeguro(c.id)}')">✕</button></div>`).join('') : vazio;
-  document.getElementById('cadCartoes').innerHTML = cc.length ? cc.map(c=>`<div class="conta-item"><div><div class="nome">${esc(c.nome)}</div>${sub((c.limite?'Limite '+formatarMoeda(c.limite):'Sem limite informado')+(c.fechamento?' · fecha dia '+esc(c.fechamento):' · sem dia de fechamento')+(c.vencimento?' · vence dia '+esc(c.vencimento):''))}</div><div style="display:flex;gap:6px"><button class="del" onclick="abrirEditarCartao('${idSeguro(c.id)}')">✎</button><button class="del" onclick="removerCartao('${idSeguro(c.id)}')">✕</button></div></div>`).join('') : vazio;
+  document.getElementById('cadContas').innerHTML = cs.length ? cs.map(c=>`<div class="conta-item ${c.dono?'com-dono '+classeDono(c.dono):''}"><div><div class="nome">${esc(c.nome)}${c.dono?' <span class="tag-dono '+classeDono(c.dono)+'">● '+c.dono+'</span>':' <span class="tag-dono">⚠ de quem é?</span>'}</div>${sub('Saldo inicial '+formatarMoeda(c.saldoInicial))}</div><div style="display:flex;gap:6px"><button class="del" onclick="abrirEditarConta('${idSeguro(c.id)}')">✎</button><button class="del" onclick="removerConta('${idSeguro(c.id)}')">✕</button></div></div>`).join('') : vazio;
+  document.getElementById('cadCartoes').innerHTML = cc.length ? cc.map(c=>`<div class="conta-item ${c.dono?'com-dono '+classeDono(c.dono):''}"><div><div class="nome">${esc(c.nome)}${c.dono?' <span class="tag-dono '+classeDono(c.dono)+'">● '+c.dono+'</span>':' <span class="tag-dono">⚠ de quem é?</span>'}</div>${sub((c.limite?'Limite '+formatarMoeda(c.limite):'Sem limite informado')+(c.fechamento?' · fecha dia '+esc(c.fechamento):' · sem dia de fechamento')+(c.vencimento?' · vence dia '+esc(c.vencimento):''))}</div><div style="display:flex;gap:6px"><button class="del" onclick="abrirEditarCartao('${idSeguro(c.id)}')">✎</button><button class="del" onclick="removerCartao('${idSeguro(c.id)}')">✕</button></div></div>`).join('') : vazio;
   document.getElementById('cadInvest').innerHTML = ci.length ? ci.map(c=>`<div class="conta-item"><div><div class="nome">${esc(c.nome)}</div>${sub('Saldo inicial '+formatarMoeda(c.saldoInicial))}</div><button class="del" onclick="removerContaInvest('${idSeguro(c.id)}')">✕</button></div>`).join('') : vazio;
 }
 
