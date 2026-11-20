@@ -539,6 +539,8 @@
           <div class="status" id="prolaboreStatus"><span class="dot off"></span> aguardando configuração</div>
         </div>
       </div>
+      <button class="cancel-link" style="margin-top:10px;width:100%;text-align:center;border:1px solid var(--line);border-radius:10px;padding:10px" onclick="gastosPropriosBuscar(true)">🔄 Buscar "Gastos próprios" do Livro Caixa</button>
+      <div class="status" id="gpStatus" style="margin-top:6px"></div>
     </div>
 
     <div class="card">
@@ -1612,6 +1614,57 @@ async function prolaboreSincronizar(snap){
   finally { prolaboreSincronizando = false; }
 }
 
+
+/* ---------- Gastos próprios (Livro Caixa) ----------
+   Toda despesa PAGA da categoria "Gastos próprios" no Livro Caixa (marcada lá com gastoProprio=true) vira aqui uma DESPESA,
+   com a mesma descrição, o mesmo local (fornecedor) e a mesma categoria (se existir aqui; senão "Outros"). Uma vez só cada.
+   Só LÊ o Livro Caixa. O que já veio fica em "gastosPropriosImportados" (se apagar daqui, não volta sozinho). */
+let gpSincronizando = false, gpTentou = false;
+async function gastosPropriosBuscar(manual){
+  if(gpSincronizando) return;
+  if(!configuradoLivroCaixa || !authPessoal || !authPessoal.currentUser || !Store.pronto){
+    if(manual) alertaGrande('Entre na conta e espere os dados carregarem para buscar do Livro Caixa.','aviso');
+    return;
+  }
+  gpSincronizando = true; gpTentou = true;
+  const st = document.getElementById('gpStatus'); if(st) st.textContent = 'Buscando no Livro Caixa...';
+  try{
+    const snap = await dbLivroCaixa.collection('livro-caixa-lancamentos').where('gastoProprio','==',true).get();
+    const feitos = Store.get('gastosPropriosImportados', {}) || {};
+    const jaPL = Store.get('prolaboreImportados', {}) || {};
+    const cats = carregarCategorias();
+    const novos = [];
+    snap.forEach(doc=>{
+      const d = doc.data(); if(feitos[doc.id] || jaPL[doc.id] || d.proLabore) return;      // já veio, ou é Pró-labore (outro fluxo)
+      if(d.status !== 'pago' || d.tipo === 'entrada') return;                             // só despesa já paga
+      const valor = Math.round((Number(d.valor)||0)*100)/100; const iso = String(d.dataPagamento || d.dataVencimento || d.data || '').slice(0,10);
+      if(!(valor>0) || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+      novos.push({ id:doc.id, d, valor, iso });
+    });
+    if(!novos.length){ if(st) st.textContent = 'Nenhum gasto próprio novo no Livro Caixa.'; if(manual) alertaGrande('Nenhum gasto próprio novo no Livro Caixa. Tudo que está lá já veio para cá.','ok'); return; }
+    novos.sort((a,b)=>a.iso.localeCompare(b.iso));
+    const porMes = {}; let t = Date.now();
+    novos.forEach(n=>{
+      const k = chaveDeData(n.iso); const lista = porMes[k] || (porMes[k] = lerLS(k, []));
+      const desc = String(n.d.descricao||'Gasto próprio').trim(), local = String(n.d.fornecedor||'').trim();
+      const nomeCat = String(n.d.categoria||'').split('/')[0].trim();
+      const catSaida = (cats.saida.find(c=>c.nome.toLowerCase()===nomeCat.toLowerCase()) || cats.saida.find(c=>c.nome==='Outros') || cats.saida[0] || {}).nome || 'Outros';
+      lista.push({ descricao:(local ? desc+' · '+local : desc).slice(0,120), valor:n.valor, categoria:catSaida, subcategoria:null, contaId:null, data:n.iso, tipo:'saida', criadoEm:t++, origemLC:n.id, localLC:local, categoriaLC:String(n.d.categoria||''), gastoProprioLC:true });
+      feitos[n.id] = true;
+    });
+    Object.keys(porMes).forEach(k=>Store.set(k, JSON.stringify(porMes[k])));
+    Store.set('gastosPropriosImportados', JSON.stringify(feitos));
+    renderTudo();
+    const soma = novos.reduce((s,n)=>s+n.valor,0);
+    if(st) st.textContent = 'Trouxe '+novos.length+' gasto(s) próprio(s).';
+    await alertaGrande('Trouxe do Livro Caixa '+novos.length+' gasto(s) próprio(s), total '+formatarMoeda(soma)+'. Cada um entrou aqui como despesa, com o mesmo local e a mesma descrição.','ok');
+  } catch(e){
+    console.error(e); if(st) st.textContent = '';
+    if(manual) alertaGrande('Não consegui buscar no Livro Caixa. Verifique a internet e tente de novo.','erro');
+  }
+  finally { gpSincronizando = false; }
+}
+
 function renderProlabore(){
   const valEl = document.getElementById('prolaboreValor');
   const statusEl = document.getElementById('prolaboreStatus');
@@ -1622,6 +1675,7 @@ function renderProlabore(){
     return;
   }
 
+  if(!gpTentou && Store.pronto) gastosPropriosBuscar(false);   // 1 vez por abertura do app
   const mesRef = mesAtual.getFullYear()*100 + (mesAtual.getMonth()+1);
   const minha = ++prolaboreReq;
 
